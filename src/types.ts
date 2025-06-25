@@ -51,6 +51,24 @@ export interface Player {
   scoredCharacters: Set<Character>;
 }
 
+export enum TurnPhase {
+  Draw = 'draw',
+  PlayCard = 'play_card',
+  AwaitMove = 'await_move',
+  Complete = 'complete'
+}
+
+export interface TurnState {
+  phase: TurnPhase;
+  cardsPlayedThisTurn: Card[];
+  lastCardWasWild: boolean;
+  movesEarnedThisTurn: number;
+  canContinuePlaying: boolean;
+  hasDrawnCard: boolean;
+}
+
+export type TurnContinuation = 'continue' | 'await_move' | 'end_turn';
+
 export interface GameState {
   players: [Player, Player];
   currentPlayer: PlayerId;
@@ -59,6 +77,7 @@ export interface GameState {
   pendingMoves: number;
   gamePhase: 'setup' | 'playing' | 'finished';
   winner?: PlayerId;
+  currentTurnState?: TurnState;
 }
 
 export interface MoveAction {

@@ -6,10 +6,23 @@ import {
   PlayerId, 
   Character,
   BodyPart,
-  CardNomination 
+  CardNomination,
+  TurnState,
+  TurnContinuation
 } from './types.js';
 import { createGameState, checkGameWinner } from './game.js';
-import { executeTurn, drawCard } from './turns.js';
+import { 
+  executeTurn, 
+  drawCard, 
+  startSequentialTurn, 
+  playNextCard, 
+  executeSequentialMove, 
+  completeTurn, 
+  canPlayAnotherCard, 
+  getCurrentTurnState, 
+  isAwaitingMove, 
+  skipMove 
+} from './turns.js';
 import { executeMove, processStackCompletions, usePendingMove } from './moves.js';
 import { nominateWildCard, isWildCard } from './wildcards.js';
 import { validateCardPlay } from './turns.js';
@@ -180,6 +193,70 @@ export class NPZRGameEngine {
       valid: errors.length === 0,
       errors
     };
+  }
+
+  // Sequential Turn Management
+  public startTurn(): TurnContinuation {
+    if (this.isGameFinished()) {
+      return 'end_turn';
+    }
+
+    return startSequentialTurn(this.gameState);
+  }
+
+  public playCard(
+    card: Card, 
+    targetStackId?: string, 
+    targetPile?: BodyPart, 
+    nomination?: CardNomination
+  ): TurnContinuation {
+    if (this.isGameFinished()) {
+      return 'end_turn';
+    }
+
+    return playNextCard(this.gameState, card, targetStackId, targetPile, nomination);
+  }
+
+  public executeSequentialMove(moveAction: MoveAction): TurnContinuation {
+    if (this.isGameFinished()) {
+      return 'end_turn';
+    }
+
+    const result = executeSequentialMove(this.gameState, moveAction);
+    
+    // Check for winner after move
+    const winner = checkGameWinner(this.gameState);
+    if (winner) {
+      this.gameState.gamePhase = 'finished';
+      this.gameState.winner = winner;
+      return 'end_turn';
+    }
+
+    return result;
+  }
+
+  public canPlayAnotherCard(): boolean {
+    return canPlayAnotherCard(this.gameState);
+  }
+
+  public getCurrentTurnState(): TurnState | undefined {
+    return getCurrentTurnState(this.gameState);
+  }
+
+  public isAwaitingMove(): boolean {
+    return isAwaitingMove(this.gameState);
+  }
+
+  public skipMove(): TurnContinuation {
+    return skipMove(this.gameState);
+  }
+
+  public endTurn(): TurnContinuation {
+    if (this.isGameFinished()) {
+      return 'end_turn';
+    }
+
+    return completeTurn(this.gameState);
   }
 
   // Debug and Testing Methods

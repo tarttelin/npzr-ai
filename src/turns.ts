@@ -1,8 +1,8 @@
-import { GameState, Card, PlayCardAction, CardNomination } from './types.js';
+import { GameState, Card, PlayCardAction, CardNomination, TurnState, TurnPhase, TurnContinuation, MoveAction, BodyPart } from './types.js';
 import { getCurrentPlayer, switchTurn, refreshDeck } from './game.js';
 import { isWildCard } from './deck.js';
 import { playCard } from './stacks.js';
-import { processStackCompletions } from './moves.js';
+import { processStackCompletions, executeMove, usePendingMove } from './moves.js';
 
 export function drawCard(gameState: GameState): Card | null {
   if (gameState.deck.length === 0) {
@@ -123,4 +123,177 @@ export function canPlayCard(gameState: GameState, card: Card): boolean {
 
 export function mustNominateWildCard(card: Card): boolean {
   return isWildCard(card) && !card.nomination;
+}
+
+// Sequential Turn Management Functions
+
+export function initializeTurnState(gameState: GameState): void {
+  gameState.currentTurnState = {
+    phase: TurnPhase.Draw,
+    cardsPlayedThisTurn: [],
+    lastCardWasWild: false,
+    movesEarnedThisTurn: 0,
+    canContinuePlaying: false,
+    hasDrawnCard: false
+  };
+}
+
+export function startSequentialTurn(gameState: GameState): TurnContinuation {
+  // Initialize turn state if not present
+  if (!gameState.currentTurnState) {
+    initializeTurnState(gameState);
+  }
+
+  // Draw phase
+  if (!gameState.currentTurnState!.hasDrawnCard) {
+    const drawnCard = drawCard(gameState);
+    gameState.currentTurnState!.hasDrawnCard = true;
+    gameState.currentTurnState!.phase = TurnPhase.PlayCard;
+  }
+
+  return 'continue';
+}
+
+export function playNextCard(
+  gameState: GameState,
+  card: Card,
+  targetStackId?: string,
+  targetPile?: BodyPart,
+  nomination?: CardNomination
+): TurnContinuation {
+  if (!gameState.currentTurnState) {
+    initializeTurnState(gameState);
+  }
+
+  // Validate the card play
+  if (!validateCardPlay(gameState, card, targetStackId)) {
+    return 'continue'; // Allow retry
+  }
+
+  // Build the action
+  const action: PlayCardAction = {
+    card,
+    targetStackId,
+    targetPile,
+    nomination
+  };
+
+  // Track moves before playing card
+  const movesBefore = gameState.pendingMoves;
+
+  // Execute the card play (this includes stack completion processing)
+  const success = executeCardPlay(gameState, action);
+  if (!success) {
+    return 'continue'; // Allow retry
+  }
+
+  // Track the played card
+  gameState.currentTurnState!.cardsPlayedThisTurn.push(card);
+  gameState.currentTurnState!.lastCardWasWild = isWildCard(card);
+
+  // Check if moves were earned from stack completions
+  const movesEarned = gameState.pendingMoves - movesBefore;
+
+  if (movesEarned > 0) {
+    gameState.currentTurnState!.movesEarnedThisTurn += movesEarned;
+    gameState.currentTurnState!.phase = TurnPhase.AwaitMove;
+    return 'await_move';
+  }
+
+  // Determine if turn should continue
+  if (isWildCard(card)) {
+    gameState.currentTurnState!.canContinuePlaying = true;
+    gameState.currentTurnState!.phase = TurnPhase.PlayCard;
+    return 'continue';
+  } else {
+    // Regular card played, end turn
+    return completeTurn(gameState);
+  }
+}
+
+export function executeSequentialMove(gameState: GameState, moveAction: MoveAction): TurnContinuation {
+  if (!gameState.currentTurnState || gameState.currentTurnState.phase !== TurnPhase.AwaitMove) {
+    return 'continue';
+  }
+
+  if (gameState.pendingMoves <= 0) {
+    return 'continue';
+  }
+
+  // Execute the move
+  const success = executeMove(gameState, moveAction);
+  
+  if (success) {
+    usePendingMove(gameState);
+    gameState.currentTurnState!.movesEarnedThisTurn--;
+
+    // Check for additional completions after the move
+    const movesBefore = gameState.pendingMoves;
+    processStackCompletions(gameState);
+    const newMovesEarned = gameState.pendingMoves - movesBefore;
+    
+    if (newMovesEarned > 0) {
+      gameState.currentTurnState!.movesEarnedThisTurn += newMovesEarned;
+      return 'await_move';
+    }
+  }
+
+  // After move execution, check if turn should continue
+  if (gameState.currentTurnState!.lastCardWasWild && gameState.currentTurnState!.movesEarnedThisTurn === 0) {
+    gameState.currentTurnState!.phase = TurnPhase.PlayCard;
+    gameState.currentTurnState!.canContinuePlaying = true;
+    return 'continue';
+  } else if (gameState.currentTurnState!.movesEarnedThisTurn === 0) {
+    return completeTurn(gameState);
+  } else {
+    return 'await_move';
+  }
+}
+
+export function completeTurn(gameState: GameState): TurnContinuation {
+  if (gameState.currentTurnState) {
+    gameState.currentTurnState.phase = TurnPhase.Complete;
+    gameState.currentTurnState.canContinuePlaying = false;
+  }
+
+  // Switch to next player
+  switchTurn(gameState);
+
+  // Clear turn state
+  gameState.currentTurnState = undefined;
+
+  return 'end_turn';
+}
+
+export function canPlayAnotherCard(gameState: GameState): boolean {
+  if (!gameState.currentTurnState) {
+    return false;
+  }
+
+  return gameState.currentTurnState.phase === TurnPhase.PlayCard && 
+         gameState.currentTurnState.canContinuePlaying;
+}
+
+export function getCurrentTurnState(gameState: GameState): TurnState | undefined {
+  return gameState.currentTurnState;
+}
+
+export function isAwaitingMove(gameState: GameState): boolean {
+  return gameState.currentTurnState?.phase === TurnPhase.AwaitMove && 
+         gameState.pendingMoves > 0;
+}
+
+export function skipMove(gameState: GameState): TurnContinuation {
+  if (!isAwaitingMove(gameState)) {
+    return 'continue';
+  }
+
+  // Player chooses not to use available move - check turn continuation
+  if (gameState.currentTurnState!.lastCardWasWild) {
+    gameState.currentTurnState!.phase = TurnPhase.PlayCard;
+    gameState.currentTurnState!.canContinuePlaying = true;
+    return 'continue';
+  } else {
+    return completeTurn(gameState);
+  }
 }
