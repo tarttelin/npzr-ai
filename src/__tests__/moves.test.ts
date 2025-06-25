@@ -10,7 +10,7 @@ import {
 } from '../moves';
 import { createGameState, createStack } from '../game';
 import { GameState, Character, BodyPart, CardType } from '../types';
-import { createDeck } from '../deck';
+// import { createDeck } from '../deck'; // Unused import
 
 describe('Move System', () => {
   let gameState: GameState;
@@ -152,7 +152,8 @@ describe('Move System', () => {
       };
       stack1.piles[BodyPart.Head].cards.push(testCard);
 
-      const initialStackCount = gameState.stacks.length;
+      // Track initial stack count for verification
+      expect(gameState.stacks.length).toBeGreaterThanOrEqual(1);
 
       const moveAction = {
         cardId: 'test_card',
@@ -375,6 +376,7 @@ describe('Move System', () => {
 
     it('should generate moves for existing cards', () => {
       const stack1 = createStack(gameState, 'player1');
+      // eslint-disable-next-line no-unused-vars
       const stack2 = createStack(gameState, 'player2');
       
       const testCard = { id: 'test', type: CardType.Regular, character: Character.Ninja, bodyPart: BodyPart.Head, isFastCard: false };

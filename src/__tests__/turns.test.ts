@@ -40,7 +40,8 @@ describe('Turn Management', () => {
     });
 
     it('should attempt to refresh deck when empty', () => {
-      const originalDeckLength = gameState.deck.length;
+      // Track that deck was initially not empty
+      expect(gameState.deck.length).toBeGreaterThan(0);
       
       // Empty the deck
       gameState.deck = [];

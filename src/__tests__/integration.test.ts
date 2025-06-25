@@ -201,6 +201,7 @@ describe('Integration Tests', () => {
       expect(card1).toBeTruthy();
       expect(card2).toBeTruthy();
       // card3 might be null if no cards to refresh
+      expect(card3).toBeNull();
     });
 
     it('should validate game state throughout play', () => {
@@ -249,7 +250,7 @@ describe('Integration Tests', () => {
         let cardId: string | undefined;
         let fromPile: BodyPart | undefined;
         
-        for (const [pileType, pile] of Object.entries(stack.piles)) {
+        for (const [, pile] of Object.entries(stack.piles)) {
           if (pile.cards.length > 0) {
             cardId = pile.cards[0].id;
             fromPile = pile.bodyPart;
@@ -363,7 +364,8 @@ describe('Integration Tests', () => {
         targetStackId: undefined
       });
 
-      const modifiedDeck = engine.getDeckSize();
+      // Store initial deck size for verification
+      expect(engine.getDeckSize()).toBeLessThan(44);
       
       // Reset
       engine.reset();
