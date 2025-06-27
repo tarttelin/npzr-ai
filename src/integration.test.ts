@@ -1,0 +1,191 @@
+import { GameEngine } from './GameEngine.js';
+import { Character, BodyPart } from './Card.js';
+import { PlayerStateType } from './PlayerState.js';
+import { Player } from './Player.js';
+import { Card } from './Card.js';
+
+// Test helper function to put a specific card on top of the deck
+function putCardOnTopOfDeck(engine: GameEngine, character: Character, bodyPart: BodyPart): boolean {
+  // Access the private deck through the engine's internal state
+  const deck = (engine as any).deck;
+  const players = (engine as any).players;
+  const cards = deck.cards;
+  
+  
+  const cardIndex = cards.findIndex((card: Card) => 
+    card.character === character && card.bodyPart === bodyPart
+  );
+  
+  if (cardIndex === -1) {
+    cards.push(new Card("test-1", character, bodyPart));
+    return true; // Hey it's a test so if the card isn't there, just invent a new one.
+  }
+  
+  // Remove the card from its current position
+  const [card] = cards.splice(cardIndex, 1);
+  
+  // Add it to the top (end of array since deck pops from the end)
+  cards.push(card);
+  
+  return true;
+}
+
+describe('NPZR Game Engine Integration Test', () => {
+  let engine: GameEngine;
+  let player1: Player;
+  let player2: Player;
+
+  beforeEach(() => {
+    engine = new GameEngine();
+    engine.createGame();
+    player1 = engine.addPlayer('Alice');
+    player2 = engine.addPlayer('Bob');
+  });
+
+  test('should create game and add players correctly', () => {
+    expect(player1.getName()).toBe('Alice');
+    expect(player2.getName()).toBe('Bob');
+    expect(player1.getId()).toBe('player1');
+    expect(player2.getId()).toBe('player2');
+  });
+
+  test('should initialize players with correct starting state', () => {
+    expect(player1.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+    expect(player2.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+    
+    expect(player1.getHand().size()).toBe(5);
+    expect(player2.getHand().size()).toBe(5);
+    
+    expect(player1.getMyScore().size()).toBe(0);
+    expect(player2.getMyScore().size()).toBe(0);
+  });
+
+  test('should allow player 1 to draw a card', () => {
+    expect(player1.getState().canDrawCard()).toBe(true);
+    
+    player1.drawCard();
+    
+    expect(player1.getHand().size()).toBe(6);
+    expect(player1.getState().getState()).toBe(PlayerStateType.PLAY_CARD);
+    expect(player1.getState().getMessage()).toBe('Play a card from your hand');
+  });
+
+  test('should allow player 1 to play a card after drawing', () => {
+    player1.drawCard();
+    
+    const cards = player1.getHand().getCards();
+    expect(cards.length).toBeGreaterThan(0);
+    
+    const cardToPlay = cards.find(c => !c.isWild())!!;
+    expect(player1.getState().canPlayCard()).toBe(true);
+    
+    player1.playCard(cardToPlay, { targetPile: cardToPlay.bodyPart });
+    
+    expect(player1.getHand().size()).toBe(5);
+    expect(player1.getMyStacks().length).toBe(1);
+    
+    const stack = player1.getMyStacks()[0];
+    expect(stack.getId()).toBe('stack1');
+    expect(stack.getOwnerId()).toBe('player1');
+  });
+
+  test('should handle wild card nomination', () => {
+    putCardOnTopOfDeck(engine, Character.Ninja, BodyPart.Wild)
+    player1.drawCard();
+    
+    const cards = player1.getHand().getCards();
+    const wildCard = cards.find(c => c.bodyPart === BodyPart.Wild && c.character === Character.Ninja)!!;
+    
+    player1.playCard(wildCard, { targetPile: BodyPart.Head });
+    
+    expect(player1.getState().getState()).toBe(PlayerStateType.NOMINATE_WILD);
+    expect(player1.getState().canNominate()).toBe(true);
+    
+    player1.nominateWildCard(wildCard, { character: Character.Ninja, bodyPart: BodyPart.Head });
+    
+    expect(wildCard.hasNomination()).toBe(true);
+    expect(wildCard.getEffectiveCharacter()).toBe(Character.Ninja);
+    expect(wildCard.getEffectiveBodyPart()).toBe(BodyPart.Head);
+  
+  });
+
+  test('should prevent invalid actions', () => {
+    // Player 2 cannot draw when not their turn
+    expect(() => {
+      player2.drawCard();
+    }).toThrow('Cannot draw card in state: waiting_for_opponent');
+    
+    // Player 1 cannot play card before drawing
+    const cards = player1.getHand().getCards();
+    if (cards.length > 0) {
+      expect(() => {
+        player1.playCard(cards[0]);
+      }).toThrow('Cannot play card in state: draw_card');
+    }
+    
+    // Cannot play card not in hand
+    player1.drawCard();
+  
+    const fakeCard = new Card("fake-id", Character.Ninja, BodyPart.Torso);
+    expect(() => {
+      player1.playCard(fakeCard);
+    }).toThrow('Card fake-id not found in hand');
+    
+  });
+
+  test('should track game state correctly', () => {
+    expect(engine.isGameComplete()).toBe(false);
+    expect(engine.getWinner()).toBe(null);
+  });
+
+  test('should allow access to opponent stacks', () => {
+    player1.drawCard();
+    const cardToPlay = player1.getHand().getCards()[0];
+    player1.playCard(cardToPlay, { targetPile: cardToPlay.bodyPart });
+    
+    expect(player1.getMyStacks().length).toBe(1);
+    expect(player1.getOpponentStacks().length).toBe(0);
+    expect(player2.getMyStacks().length).toBe(0);
+    expect(player2.getOpponentStacks().length).toBe(1);
+  });
+
+  test('should provide correct player state messages', () => {
+    expect(player1.getState().getMessage()).toBe('Draw a card from the deck to start your turn');
+    expect(player2.getState().getMessage()).toBe('Waiting for opponent to complete their turn');
+    
+    player1.drawCard();
+    expect(player1.getState().getMessage()).toBe('Play a card from your hand');
+  });
+
+  test('should allow controlled card drawing with test helper', () => {
+    // Put a specific card on top of the deck
+    const cardFound = putCardOnTopOfDeck(engine, Character.Ninja, BodyPart.Head);
+    expect(cardFound).toBe(true);
+    
+    // Player 1 draws and should get the Ninja Head
+    player1.drawCard();
+    
+    const drawnCards = player1.getHand().getCards();
+    const ninjaHead = drawnCards.find(card => 
+      card.character === Character.Ninja && card.bodyPart === BodyPart.Head
+    );
+    
+    expect(ninjaHead).toBeDefined();
+    expect(ninjaHead!.character).toBe(Character.Ninja);
+    expect(ninjaHead!.bodyPart).toBe(BodyPart.Head);
+  });
+
+  test('should handle valid actions list', () => {
+    const actions1 = player1.getState().getValidActions();
+    expect(actions1).toHaveLength(1);
+    expect(actions1[0].type).toBe('draw');
+    
+    const actions2 = player2.getState().getValidActions();
+    expect(actions2).toHaveLength(0);
+    
+    player1.drawCard();
+    const actionsAfterDraw = player1.getState().getValidActions();
+    expect(actionsAfterDraw).toHaveLength(1);
+    expect(actionsAfterDraw[0].type).toBe('play');
+  });
+});
