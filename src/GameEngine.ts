@@ -13,6 +13,7 @@ export class GameEngine {
   private gameComplete = false;
   private winner: Player | null = null;
   private stackIdCounter = 1;
+  private lastPlayedCard: Card | null = null;
 
   createGame(): void {
     this.deck = new Deck();
@@ -22,6 +23,7 @@ export class GameEngine {
     this.gameComplete = false;
     this.winner = null;
     this.stackIdCounter = 1;
+    this.lastPlayedCard = null;
   }
 
   addPlayer(playerName: string): Player {
@@ -102,6 +104,9 @@ export class GameEngine {
   playerPlayCard(playerId: string, card: Card, options: PlayCardOptions): void {
     const player = this.getPlayer(playerId);
     player.removeCardFromHand(card);
+
+    // Store the last played card
+    this.lastPlayedCard = card;
 
     // Determine target stack
     let targetStack: Stack;
@@ -268,8 +273,15 @@ export class GameEngine {
   }
 
   private continueOrEndTurn(playerId: string): void {
-    // For now, just end the turn
-    this.endPlayerTurn(playerId);
+    const player = this.getPlayer(playerId);
+    
+    // If the last played card was wild, player can continue playing
+    if (this.lastPlayedCard && this.lastPlayedCard.canContinueTurn()) {
+      player.setState(PlayerState.playCard());
+    } else {
+      // End turn
+      this.endPlayerTurn(playerId);
+    }
   }
 
   private endPlayerTurn(playerId: string): void {
@@ -281,6 +293,9 @@ export class GameEngine {
     nextPlayer.setState(PlayerState.drawCard());
     
     this.currentPlayerIndex = nextPlayerIndex;
+    
+    // Clear the last played card when turn ends
+    this.lastPlayedCard = null;
   }
 
   private endGame(winner: Player): void {

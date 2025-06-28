@@ -328,4 +328,139 @@ describe('NPZR Game Engine Integration Test', () => {
     
     console.log('End-to-end test completed successfully!');
   });
+
+  test('should allow wild card continuation after move phase', () => {
+    // Create fresh game for this specific scenario
+    const testEngine = new GameEngine();
+    testEngine.createGame();
+    
+    // Set up initial hands - give each player some basic cards
+    putCardOnTopOfDeck(testEngine, Character.Ninja, BodyPart.Head);
+    putCardOnTopOfDeck(testEngine, Character.Robot, BodyPart.Head);
+    putCardOnTopOfDeck(testEngine, Character.Pirate, BodyPart.Torso);
+    putCardOnTopOfDeck(testEngine, Character.Zombie, BodyPart.Legs);
+    putCardOnTopOfDeck(testEngine, Character.Ninja, BodyPart.Torso);
+    const testPlayer1 = testEngine.addPlayer("TestPlayer1");
+
+    putCardOnTopOfDeck(testEngine, Character.Pirate, BodyPart.Head);
+    putCardOnTopOfDeck(testEngine, Character.Robot, BodyPart.Torso);
+    putCardOnTopOfDeck(testEngine, Character.Zombie, BodyPart.Head);
+    putCardOnTopOfDeck(testEngine, Character.Pirate, BodyPart.Legs);
+    putCardOnTopOfDeck(testEngine, Character.Robot, BodyPart.Legs);
+    const testPlayer2 = testEngine.addPlayer("TestPlayer2");
+
+    // === Turn 1: Player 1 plays Ninja Head ===
+    putCardOnTopOfDeck(testEngine, Character.Zombie, BodyPart.Torso);
+    testPlayer1.drawCard();
+    const ninjaHead = getCardFromHand(testPlayer1, Character.Ninja, BodyPart.Head);
+    testPlayer1.playCard(ninjaHead, { targetPile: BodyPart.Head });
+    
+    expect(testPlayer1.getMyStacks()).toHaveLength(1);
+    expect(testPlayer1.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+
+    // === Turn 1: Player 2 plays something ===
+    putCardOnTopOfDeck(testEngine, Character.Ninja, BodyPart.Legs);
+    testPlayer2.drawCard();
+    const pirateHead = getCardFromHand(testPlayer2, Character.Pirate, BodyPart.Head);
+    testPlayer2.playCard(pirateHead, { targetPile: BodyPart.Head });
+    
+    expect(testPlayer2.getMyStacks()).toHaveLength(1);
+    expect(testPlayer2.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+
+    // === Turn 2: Player 1 adds Ninja Torso to existing stack ===
+    putCardOnTopOfDeck(testEngine, Character.Robot, BodyPart.Head); 
+    testPlayer1.drawCard();
+    const ninjaTorso = getCardFromHand(testPlayer1, Character.Ninja, BodyPart.Torso);
+    testPlayer1.playCard(ninjaTorso, { 
+      targetStackId: testPlayer1.getMyStacks()[0].getId(), 
+      targetPile: BodyPart.Torso 
+    });
+    
+    // Stack should have head and torso now
+    const ninjaStack = testPlayer1.getMyStacks()[0];
+    expect(ninjaStack.getTopCards().head?.character).toBe(Character.Ninja);
+    expect(ninjaStack.getTopCards().torso?.character).toBe(Character.Ninja);
+    expect(ninjaStack.isComplete()).toBe(false);
+
+    // === Turn 2: Player 2 plays something ===
+    putCardOnTopOfDeck(testEngine, Character.Pirate, BodyPart.Wild);
+    testPlayer2.drawCard();
+    const robotTorso = getCardFromHand(testPlayer2, Character.Robot, BodyPart.Torso);
+    testPlayer2.playCard(robotTorso, { targetPile: BodyPart.Torso });
+
+    // === Turn 3: Player 1 creates second stack ===
+    putCardOnTopOfDeck(testEngine, Character.Ninja, BodyPart.Wild); // Ninja Wild card
+    testPlayer1.drawCard();
+    const robotHead = getCardFromHand(testPlayer1, Character.Robot, BodyPart.Head);
+    testPlayer1.playCard(robotHead, { targetPile: BodyPart.Head });
+    
+    // Now player 1 should have 2 stacks
+    expect(testPlayer1.getMyStacks()).toHaveLength(2);
+
+    // === Turn 3: Player 2 plays something ===
+    putCardOnTopOfDeck(testEngine, Character.Zombie, BodyPart.Head);
+    testPlayer2.drawCard();
+    const pirateWild = getCardFromHand(testPlayer2, Character.Pirate, BodyPart.Wild);
+    testPlayer2.playCard(pirateWild, { targetPile: BodyPart.Head });
+    // Player 2 needs to nominate the wild
+    testPlayer2.nominateWildCard(pirateWild, { character: Character.Pirate, bodyPart: BodyPart.Head });
+    
+    // After nominating wild, Player 2 can continue playing
+    expect(testPlayer2.getState().getState()).toBe(PlayerStateType.PLAY_CARD);
+    
+    // Player 2 plays another card to end their turn
+    putCardOnTopOfDeck(testEngine, Character.Zombie, BodyPart.Head);
+    const pirateLegs = getCardFromHand(testPlayer2, Character.Pirate, BodyPart.Legs);
+    testPlayer2.playCard(pirateLegs, { targetPile: BodyPart.Legs });
+    
+    // Now it should be Player 1's turn
+    expect(testPlayer1.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+
+    // === Turn 4: Player 1 plays Ninja Wild as Ninja Legs to complete stack ===
+    testPlayer1.drawCard();
+    const ninjaWild = getCardFromHand(testPlayer1, Character.Ninja, BodyPart.Wild);
+    
+    testPlayer1.playCard(ninjaWild, { 
+      targetStackId: ninjaStack.getId(), 
+      targetPile: BodyPart.Legs 
+    });
+    
+    // Should be in NOMINATE_WILD state
+    expect(testPlayer1.getState().getState()).toBe(PlayerStateType.NOMINATE_WILD);
+    
+    // Nominate the ninja wild card as ninja legs to complete the stack
+    testPlayer1.nominateWildCard(ninjaWild, { 
+      character: Character.Ninja, 
+      bodyPart: BodyPart.Legs 
+    });
+    
+    // Stack should now be complete and player should have earned a move
+    expect(testPlayer1.getState().getState()).toBe(PlayerStateType.MOVE_CARD);
+    expect(testPlayer1.getMyScore().hasCharacter(Character.Ninja)).toBe(true);
+    
+    // Player should have 1 remaining stack (ninja stack was removed after completion)
+    expect(testPlayer1.getMyStacks()).toHaveLength(1);
+    
+    // Make the required move - move a card to opponent's stack or create new stack
+    const myStack = testPlayer1.getMyStacks()[0];
+    const opponentStack = testPlayer2.getMyStacks()[0]; // Move to opponent stack
+    const cardToMove = myStack.getHeads()[0] || myStack.getTorsos()[0] || myStack.getLegs()[0];
+    const fromPile = myStack.getHeads().length > 0 ? BodyPart.Head : 
+                    myStack.getTorsos().length > 0 ? BodyPart.Torso : BodyPart.Legs;
+    
+    testPlayer1.moveCard({
+      cardId: cardToMove.id,
+      fromStackId: myStack.getId(),
+      fromPile: fromPile,
+      toStackId: opponentStack.getId(),
+      toPile: BodyPart.Head
+    });
+    
+    // After move, should return to PLAY_CARD state because last card was wild
+    expect(testPlayer1.getState().getState()).toBe(PlayerStateType.PLAY_CARD);
+    expect(testPlayer1.isMyTurn()).toBe(true);
+    
+    // Should NOT be opponent's turn
+    expect(testPlayer2.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+  });
 });
