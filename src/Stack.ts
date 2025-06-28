@@ -103,8 +103,7 @@ export class Stack {
       return false; // Cannot place cards on wild piles
     }
 
-    // Any card can be placed on any valid pile
-    return true;
+    return (card.bodyPart === BodyPart.Wild || card.bodyPart === pile)
   }
 
   hasCards(): boolean {

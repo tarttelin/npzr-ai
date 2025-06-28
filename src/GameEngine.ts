@@ -166,7 +166,8 @@ export class GameEngine {
       throw new Error('Card not found in specified pile');
     }
 
-    if (!toStack.canAcceptCard(fromStack.getCardsFromPile(options.fromPile).find(c => c.id === options.cardId)!, options.toPile)) {
+    const cardToMove = fromStack.getCardsFromPile(options.fromPile).find(c => c.id === options.cardId);
+    if (!cardToMove || !toStack.canAcceptCard(cardToMove, options.toPile)) {
       throw new Error('Cannot place card in target pile');
     }
 

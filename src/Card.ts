@@ -31,29 +31,6 @@ export class Card {
     return this.character === Character.Wild || this.bodyPart === BodyPart.Wild;
   }
 
-  canFitPile(targetCharacter?: Character, targetBodyPart?: BodyPart): boolean {
-    // Regular cards must match exactly
-    if (this.character !== Character.Wild && this.bodyPart !== BodyPart.Wild) {
-      return this.character === targetCharacter && this.bodyPart === targetBodyPart;
-    }
-
-    // Character-specific wild (specific character + wild body part)
-    if (this.character !== Character.Wild && this.bodyPart === BodyPart.Wild) {
-      return this.character === targetCharacter;
-    }
-
-    // Position-specific wild (wild character + specific body part)
-    if (this.character === Character.Wild && this.bodyPart !== BodyPart.Wild) {
-      return this.bodyPart === targetBodyPart;
-    }
-
-    // Universal wild (wild character + wild body part)
-    if (this.character === Character.Wild && this.bodyPart === BodyPart.Wild) {
-      return true;
-    }
-
-    return false;
-  }
 
   getEffectiveCharacter(): Character {
     return this.nomination?.character || this.character;

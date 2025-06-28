@@ -30,6 +30,16 @@ function putCardOnTopOfDeck(engine: GameEngine, character: Character, bodyPart: 
   return true;
 }
 
+// Test helper function to get a card from player's hand by character and bodypart
+function getCardFromHand(player: Player, character: Character, bodyPart: BodyPart): Card {
+  const cards = player.getHand().getCards();
+  const card = cards.find(c => c.character === character && c.bodyPart === bodyPart);
+  if (!card) {
+    throw new Error(`Card ${character} ${bodyPart} not found in ${player.getName()}'s hand`);
+  }
+  return card;
+}
+
 describe('NPZR Game Engine Integration Test', () => {
   let engine: GameEngine;
   let player1: Player;
@@ -106,6 +116,8 @@ describe('NPZR Game Engine Integration Test', () => {
     expect(wildCard.hasNomination()).toBe(true);
     expect(wildCard.getEffectiveCharacter()).toBe(Character.Ninja);
     expect(wildCard.getEffectiveBodyPart()).toBe(BodyPart.Head);
+    expect(player1.isMyTurn()).toBeTruthy();
+    expect(player1.getState().getState()).toBe(PlayerStateType.PLAY_CARD);
   
   });
 
@@ -140,7 +152,7 @@ describe('NPZR Game Engine Integration Test', () => {
 
   test('should allow access to opponent stacks', () => {
     player1.drawCard();
-    const cardToPlay = player1.getHand().getCards()[0];
+    const cardToPlay = player1.getHand().getCards().find(c => c.isWild() === false)!!;
     player1.playCard(cardToPlay, { targetPile: cardToPlay.bodyPart });
     
     expect(player1.getMyStacks().length).toBe(1);
@@ -187,5 +199,133 @@ describe('NPZR Game Engine Integration Test', () => {
     const actionsAfterDraw = player1.getState().getValidActions();
     expect(actionsAfterDraw).toHaveLength(1);
     expect(actionsAfterDraw[0].type).toBe('play');
+  });
+
+  test('should play a complete game end-to-end with controlled card order', () => {
+    // Create fresh game with controlled setup
+    const gameEngine = new GameEngine();
+    gameEngine.createGame();
+    
+    // Set up deck for player 1's initial hand
+    putCardOnTopOfDeck(gameEngine, Character.Ninja, BodyPart.Head);
+    putCardOnTopOfDeck(gameEngine, Character.Ninja, BodyPart.Legs);
+    putCardOnTopOfDeck(gameEngine, Character.Pirate, BodyPart.Wild);
+    putCardOnTopOfDeck(gameEngine, Character.Robot, BodyPart.Torso);
+    putCardOnTopOfDeck(gameEngine, Character.Zombie, BodyPart.Head);
+    const james = gameEngine.addPlayer("James");
+
+    // Set up deck for player 2's initial hand
+    putCardOnTopOfDeck(gameEngine, Character.Ninja, BodyPart.Torso);
+    putCardOnTopOfDeck(gameEngine, Character.Robot, BodyPart.Head);
+    putCardOnTopOfDeck(gameEngine, Character.Zombie, BodyPart.Head);
+    putCardOnTopOfDeck(gameEngine, Character.Zombie, BodyPart.Torso);
+    putCardOnTopOfDeck(gameEngine, Character.Zombie, BodyPart.Legs);
+    const aidan = gameEngine.addPlayer("Aidan");
+
+    // Verify initial state
+    expect(james.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+    expect(aidan.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+
+    // === JAMES'S FIRST TURN ===
+    putCardOnTopOfDeck(gameEngine, Character.Zombie, BodyPart.Torso);
+    james.drawCard();
+    
+    const jamesNinjaHead = getCardFromHand(james, Character.Ninja, BodyPart.Head);
+    james.playCard(jamesNinjaHead, { targetPile: BodyPart.Head });
+    
+    // Should transition to Aidan's turn
+    expect(james.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+    expect(aidan.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+    expect(james.getMyStacks()).toHaveLength(1);
+
+    // === AIDAN'S FIRST TURN ===
+    putCardOnTopOfDeck(gameEngine, Character.Pirate, BodyPart.Torso);
+    aidan.drawCard();
+    
+    const aidanZombieHead = getCardFromHand(aidan, Character.Zombie, BodyPart.Head);
+    aidan.playCard(aidanZombieHead, { targetPile: BodyPart.Head });
+    
+    // Should transition back to James's turn
+    expect(aidan.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+    expect(james.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+    expect(aidan.getMyStacks()).toHaveLength(1);
+
+    // === JAMES'S SECOND TURN ===
+    putCardOnTopOfDeck(gameEngine, Character.Robot, BodyPart.Legs);
+    james.drawCard();
+    
+    const jamesRobotTorso = getCardFromHand(james, Character.Robot, BodyPart.Torso);
+    james.playCard(jamesRobotTorso, { targetPile: BodyPart.Torso });
+    
+    // Should transition to Aidan's turn
+    expect(james.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+    expect(aidan.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+    expect(james.getMyStacks()).toHaveLength(2); // Now has ninja stack and robot stack
+
+    // === AIDAN'S SECOND TURN ===
+    putCardOnTopOfDeck(gameEngine, Character.Ninja, BodyPart.Head);
+    aidan.drawCard();
+    
+    const aidanZombieTorso = getCardFromHand(aidan, Character.Zombie, BodyPart.Torso);
+    aidan.playCard(aidanZombieTorso, { targetStackId: aidan.getMyStacks()[0].getId(), targetPile: BodyPart.Torso });
+    
+    // Should transition back to James
+    expect(aidan.getState().getState()).toBe(PlayerStateType.WAITING_FOR_OPPONENT);
+    expect(james.getState().getState()).toBe(PlayerStateType.DRAW_CARD);
+
+    // === Verify game state ===
+    expect(gameEngine.isGameComplete()).toBe(false);
+    expect(gameEngine.getWinner()).toBe(null);
+    
+    // James should have 2 stacks (ninja head, robot torso)
+    expect(james.getMyStacks()).toHaveLength(2);
+    
+    // Aidan should have 1 stack (zombie head + torso)
+    expect(aidan.getMyStacks()).toHaveLength(1);
+    const aidanZombieStack = aidan.getMyStacks()[0];
+    expect(aidanZombieStack.getTopCards().head?.character).toBe(Character.Zombie);
+    expect(aidanZombieStack.getTopCards().torso?.character).toBe(Character.Zombie);
+    
+    // Verify players can see opponent stacks
+    expect(james.getOpponentStacks()).toHaveLength(1);
+    expect(aidan.getOpponentStacks()).toHaveLength(2);
+    
+    // === Test completing a stack ===
+    putCardOnTopOfDeck(gameEngine, Character.Zombie, BodyPart.Legs);
+    james.drawCard();
+    
+    // Add zombie legs to complete Aidan's zombie stack
+    const jamesZombieLegs = getCardFromHand(james, Character.Zombie, BodyPart.Legs);
+    
+    // James can play on Aidan's stack (defensive play)
+    const aidanStack = james.getOpponentStacks()[0];
+    james.playCard(jamesZombieLegs, { 
+      targetStackId: aidanStack.getId(), 
+      targetPile: BodyPart.Legs 
+    });
+    
+    // This should complete Aidan's zombie stack and give Aidan a point
+    expect(aidan.getMyScore().hasCharacter(Character.Zombie)).toBe(true);
+    expect(aidan.getMyScore().size()).toBe(1);
+    
+    // The completed stack should be removed
+    expect(aidan.getMyStacks()).toHaveLength(0);
+    expect(james.getOpponentStacks()).toHaveLength(0);
+
+    expect(james.getState().getState()).toBe(PlayerStateType.MOVE_CARD)
+    expect(james.canMoveCard(
+      {stackId: james.getMyStacks()[0].getId(), pile: BodyPart.Head}, 
+      {stackId: james.getMyStacks()[1].getId(), pile: BodyPart.Head}
+    )).toBeTruthy()
+    const cardToMove = james.getMyStacks()[0].getHeads()[0].id
+    james.moveCard({
+      cardId: cardToMove, 
+      fromStackId: james.getMyStacks()[0].getId(), 
+      fromPile: BodyPart.Head, 
+      toStackId: james.getMyStacks()[1].getId(), 
+      toPile: BodyPart.Head});
+    expect(james.isMyTurn()).toBeFalsy()
+    
+    console.log('End-to-end test completed successfully!');
   });
 });
