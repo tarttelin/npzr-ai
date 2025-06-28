@@ -1,28 +1,12 @@
-// Main NPZR Game Engine Export
-export * from './types.js';
-export * from './deck.js';
-export * from './game.js';
-export * from './stacks.js';
-export * from './turns.js';
-export * from './moves.js';
-export { 
-  nominateWildCard, 
-  resetWildCard, 
-  canNominate, 
-  isFastCard, 
-  getWildCardConstraints,
-  getPossibleNominations,
-  validateNomination,
-  getEffectiveCharacter,
-  getEffectiveBodyPart,
-  isNominated,
-  requiresNomination,
-  cloneCardWithNomination,
-  getWildCardDescription,
-  getCardDisplayName,
-  createNominatedWildCard
-} from './wildcards.js';
-export { NPZRGameEngine } from './engine.js';
+// Main NPZR Game Engine Export - New Player-Centric API
+export { Card, Character, BodyPart, CardNomination } from './Card.js';
+export { Deck } from './Deck.js';
+export { Hand } from './Hand.js';
+export { Stack, TopCards } from './Stack.js';
+export { Score } from './Score.js';
+export { PlayerState, PlayerStateType, Action } from './PlayerState.js';
+export { Player, PlayCardOptions, MoveOptions, Position } from './Player.js';
+export { GameEngine } from './GameEngine.js';
 
-// Re-export main classes for convenience
-export { NPZRGameEngine as GameEngine } from './engine.js';
+// Main entry point
+export { GameEngine as default } from './GameEngine.js';
