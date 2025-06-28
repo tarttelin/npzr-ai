@@ -1,0 +1,482 @@
+/* ===== CSS CUSTOM PROPERTIES ===== */
+:root {
+  /* Character Colors */
+  --ninja-primary: #2C2C2C;
+  --ninja-secondary: #1A1A1A;
+  --pirate-primary: #8B4513;
+  --pirate-secondary: #DC143C;
+  --zombie-primary: #9370DB;
+  --zombie-secondary: #32CD32;
+  --robot-primary: #FFD700;
+  --robot-secondary: #FFA500;
+  
+  /* Supporting Colors */
+  --bg-primary: #F5F5F5;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --accent: #FF6B35;
+  --white: #FFFFFF;
+  --shadow: rgba(0, 0, 0, 0.15);
+  
+  /* Typography */
+  --font-heading: 'Orbitron', monospace;
+  --font-body: 'Open Sans', sans-serif;
+  
+  /* Spacing */
+  --container-max-width: 1200px;
+  --section-padding: 4rem 0;
+  --element-spacing: 2rem;
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* ===== RESET AND BASE STYLES ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  overflow-x: hidden;
+}
+
+/* ===== ACCESSIBILITY ===== */
+.skip-nav {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--ninja-primary);
+  color: var(--white);
+  padding: 8px;
+  text-decoration: none;
+  z-index: 1000;
+  border-radius: 4px;
+  transition: top var(--transition-fast);
+}
+
+.skip-nav:focus {
+  top: 6px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus indicators */
+*:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus,
+.character-card:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ===== LAYOUT ===== */
+.container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+section {
+  padding: var(--section-padding);
+}
+
+/* ===== TYPOGRAPHY ===== */
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 4rem);
+  text-align: center;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+p {
+  margin-bottom: 1rem;
+  font-size: clamp(1rem, 2vw, 1.1rem);
+}
+
+/* ===== HERO SECTION ===== */
+.hero-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, 
+    var(--ninja-secondary) 0%, 
+    var(--pirate-primary) 25%, 
+    var(--zombie-primary) 50%, 
+    var(--robot-primary) 75%, 
+    var(--ninja-primary) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.hero-section .container {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.game-logo {
+  margin-bottom: 3rem;
+  animation: logoEntrance 1s ease-out;
+}
+
+.logo-text {
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.logo-ninja { color: var(--white); }
+.logo-pirate { color: var(--pirate-secondary); }
+.logo-zombie { color: var(--zombie-secondary); }
+.logo-robot { color: var(--robot-primary); }
+
+.tagline {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  color: var(--white);
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  animation: taglineGlow 2s ease-in-out infinite alternate;
+}
+
+/* Character Showcase in Hero */
+.character-showcase {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.character-hero {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid var(--white);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-normal);
+  animation: characterFloat 3s ease-in-out infinite;
+}
+
+.character-hero:nth-child(1) { animation-delay: 0s; }
+.character-hero:nth-child(2) { animation-delay: 0.5s; }
+.character-hero:nth-child(3) { animation-delay: 1s; }
+.character-hero:nth-child(4) { animation-delay: 1.5s; }
+
+.character-hero:hover {
+  transform: translateY(-10px) scale(1.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.ninja-hero:hover { border-color: var(--ninja-secondary); }
+.pirate-hero:hover { border-color: var(--pirate-secondary); }
+.zombie-hero:hover { border-color: var(--zombie-secondary); }
+.robot-hero:hover { border-color: var(--robot-primary); }
+
+/* ===== MAIN SECTIONS ===== */
+.game-intro {
+  background: var(--white);
+  text-align: center;
+}
+
+.intro-text {
+  font-size: clamp(1.1rem, 3vw, 1.3rem);
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* ===== CHARACTER SECTION ===== */
+.characters {
+  background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.character-card {
+  background: var(--white);
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 5px 20px var(--shadow);
+  border: 3px solid transparent;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.character-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  transition: height var(--transition-normal);
+}
+
+.character-card.ninja::before { background: var(--ninja-primary); }
+.character-card.pirate::before { background: var(--pirate-primary); }
+.character-card.zombie::before { background: var(--zombie-primary); }
+.character-card.robot::before { background: var(--robot-primary); }
+
+.character-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 35px var(--shadow);
+}
+
+.character-card:hover::before {
+  height: 100%;
+  opacity: 0.05;
+}
+
+.character-card.ninja:hover { border-color: var(--ninja-primary); }
+.character-card.pirate:hover { border-color: var(--pirate-primary); }
+.character-card.zombie:hover { border-color: var(--zombie-primary); }
+.character-card.robot:hover { border-color: var(--robot-primary); }
+
+.character-card h3 {
+  margin: 1rem 0;
+  font-size: 1.5rem;
+}
+
+.character-card.ninja h3 { color: var(--ninja-primary); }
+.character-card.pirate h3 { color: var(--pirate-primary); }
+.character-card.zombie h3 { color: var(--zombie-primary); }
+.character-card.robot h3 { color: var(--robot-primary); }
+
+.character-stats {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.stat {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ===== GAME FEATURES ===== */
+.game-features {
+  background: var(--white);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.feature {
+  text-align: center;
+  padding: 2rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  border: 1px solid #e9ecef;
+  transition: all var(--transition-normal);
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.feature h3 {
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+/* ===== CALL TO ACTION ===== */
+.cta-section {
+  background: linear-gradient(135deg, var(--ninja-primary), var(--accent));
+  color: var(--white);
+  text-align: center;
+}
+
+.cta-section h2,
+.cta-section p {
+  color: var(--white);
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary,
+.btn-secondary {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  min-width: 160px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, var(--accent), var(--robot-primary));
+  color: var(--white);
+  box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, var(--robot-primary), var(--accent));
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.5);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--white);
+  border: 2px solid var(--white);
+}
+
+.btn-secondary:hover {
+  background: var(--white);
+  color: var(--ninja-primary);
+  transform: scale(1.05);
+}
+
+/* ===== FOOTER ===== */
+footer {
+  background: var(--ninja-primary);
+  color: var(--white);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+footer p {
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes logoEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes taglineGlow {
+  0% {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  100% {
+    text-shadow: 1px 1px 20px rgba(255, 215, 0, 0.3);
+  }
+}
+
+@keyframes characterFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* ===== REDUCED MOTION SUPPORT ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .character-hero {
+    animation: none;
+  }
+  
+  .tagline {
+    animation: none;
+  }
+}

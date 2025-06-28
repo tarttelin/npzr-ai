@@ -1,0 +1,250 @@
+/* ===== CHARACTER-SPECIFIC STYLES ===== */
+
+/* Character Icons - Base Styles */
+.character-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.character-icon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  opacity: 0.8;
+  transition: opacity var(--transition-normal);
+}
+
+.character-icon:hover::before {
+  opacity: 1;
+}
+
+/* Large Character Icons for Cards */
+.character-large {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1rem;
+  font-size: 2.5rem;
+}
+
+/* ===== NINJA STYLING ===== */
+.ninja-icon::before {
+  background: linear-gradient(135deg, var(--ninja-primary), var(--ninja-secondary));
+}
+
+.ninja-icon::after {
+  content: '🥷';
+  position: relative;
+  z-index: 2;
+}
+
+.ninja-large::after {
+  content: '🥷';
+  position: relative;
+  z-index: 2;
+}
+
+/* Ninja-specific animations */
+.ninja-hero:hover .ninja-icon {
+  animation: ninjaStrike 0.6s ease-in-out;
+}
+
+@keyframes ninjaStrike {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg) scale(1.1); }
+  75% { transform: rotate(5deg) scale(1.1); }
+}
+
+/* ===== PIRATE STYLING ===== */
+.pirate-icon::before {
+  background: linear-gradient(135deg, var(--pirate-primary), var(--pirate-secondary));
+}
+
+.pirate-icon::after {
+  content: '🏴‍☠️';
+  position: relative;
+  z-index: 2;
+}
+
+.pirate-large::after {
+  content: '🏴‍☠️';
+  position: relative;
+  z-index: 2;
+}
+
+/* Pirate-specific animations */
+.pirate-hero:hover .pirate-icon {
+  animation: pirateRock 0.8s ease-in-out;
+}
+
+@keyframes pirateRock {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+/* ===== ZOMBIE STYLING ===== */
+.zombie-icon::before {
+  background: linear-gradient(135deg, var(--zombie-primary), var(--zombie-secondary));
+}
+
+.zombie-icon::after {
+  content: '🧟';
+  position: relative;
+  z-index: 2;
+}
+
+.zombie-large::after {
+  content: '🧟';
+  position: relative;
+  z-index: 2;
+}
+
+/* Zombie-specific animations */
+.zombie-hero:hover .zombie-icon {
+  animation: zombieShamble 1s ease-in-out;
+}
+
+@keyframes zombieShamble {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px) rotate(-2deg); }
+  50% { transform: translateX(0) rotate(0deg); }
+  75% { transform: translateX(3px) rotate(2deg); }
+}
+
+/* ===== ROBOT STYLING ===== */
+.robot-icon::before {
+  background: linear-gradient(135deg, var(--robot-primary), var(--robot-secondary));
+}
+
+.robot-icon::after {
+  content: '🤖';
+  position: relative;
+  z-index: 2;
+}
+
+.robot-large::after {
+  content: '🤖';
+  position: relative;
+  z-index: 2;
+}
+
+/* Robot-specific animations */
+.robot-hero:hover .robot-icon {
+  animation: robotScan 0.5s ease-in-out;
+}
+
+@keyframes robotScan {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* ===== CHARACTER CARD HOVER EFFECTS ===== */
+.character-card.ninja:hover {
+  box-shadow: 0 15px 35px rgba(44, 44, 44, 0.3);
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+}
+
+.character-card.pirate:hover {
+  box-shadow: 0 15px 35px rgba(139, 69, 19, 0.3);
+  background: linear-gradient(135deg, #ffffff, #fff8f0);
+}
+
+.character-card.zombie:hover {
+  box-shadow: 0 15px 35px rgba(147, 112, 219, 0.3);
+  background: linear-gradient(135deg, #ffffff, #f8f5ff);
+}
+
+.character-card.robot:hover {
+  box-shadow: 0 15px 35px rgba(255, 215, 0, 0.3);
+  background: linear-gradient(135deg, #ffffff, #fffaf0);
+}
+
+/* ===== CHARACTER THEME COLORS ===== */
+.ninja-theme {
+  --theme-primary: var(--ninja-primary);
+  --theme-secondary: var(--ninja-secondary);
+}
+
+.pirate-theme {
+  --theme-primary: var(--pirate-primary);
+  --theme-secondary: var(--pirate-secondary);
+}
+
+.zombie-theme {
+  --theme-primary: var(--zombie-primary);
+  --theme-secondary: var(--zombie-secondary);
+}
+
+.robot-theme {
+  --theme-primary: var(--robot-primary);
+  --theme-secondary: var(--robot-secondary);
+}
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+.character-card:focus .character-icon,
+.character-hero:focus .character-icon {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .character-icon::before {
+    border: 2px solid white;
+  }
+  
+  .character-card {
+    border: 2px solid var(--text-primary);
+  }
+  
+  .character-card.ninja { border-color: var(--ninja-primary); }
+  .character-card.pirate { border-color: var(--pirate-primary); }
+  .character-card.zombie { border-color: var(--zombie-primary); }
+  .character-card.robot { border-color: var(--robot-primary); }
+}
+
+/* ===== FALLBACK STYLES (if emojis don't load) ===== */
+.character-icon {
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
+}
+
+/* Fallback text if emojis aren't supported */
+@supports not (font-family: 'Apple Color Emoji') {
+  .ninja-icon::after { content: 'N'; }
+  .pirate-icon::after { content: 'P'; }
+  .zombie-icon::after { content: 'Z'; }
+  .robot-icon::after { content: 'R'; }
+  
+  .ninja-large::after { content: 'NINJA'; }
+  .pirate-large::after { content: 'PIRATE'; }
+  .zombie-large::after { content: 'ZOMBIE'; }
+  .robot-large::after { content: 'ROBOT'; }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .character-icon::before,
+  .character-card::before {
+    display: none;
+  }
+  
+  .character-card {
+    page-break-inside: avoid;
+    border: 1px solid black;
+  }
+}
