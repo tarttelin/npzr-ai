@@ -2,16 +2,20 @@ import { Player, PlayCardOptions, MoveOptions } from './Player.js';
 import { PlayerStateType } from './PlayerState.js';
 import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
+import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
   private lastPlayedCard: Card | null = null;
+  private analyzer: GameStateAnalyzer;
 
   constructor(
     private readonly player: Player,
     private readonly difficulty: Difficulty
-  ) {}
+  ) {
+    this.analyzer = new GameStateAnalyzer();
+  }
 
   /**
    * Main decision-making method - handles the current player state
@@ -68,15 +72,24 @@ export class AIPlayer {
   }
 
   /**
-   * Basic logging/debugging - returns strategy description
+   * Get comprehensive game state analysis
+   */
+  getGameAnalysis(): GameAnalysis {
+    return this.analyzer.analyzeGameState(
+      this.player.getMyStacks(),
+      this.player.getOpponentStacks(),
+      this.player.getHand(),
+      this.player.getMyScore(),
+      this.player.getOpponentScore()
+    );
+  }
+
+  /**
+   * Enhanced strategy information using game state analysis
    */
   getStrategy(): string {
-    const state = this.getCurrentState();
-    const handSize = this.player.getHand().size();
-    const myStacks = this.player.getMyStacks().length;
-    const score = this.player.getMyScore().size();
-    
-    return `AI (${this.difficulty}): State=${state}, Hand=${handSize}, Stacks=${myStacks}, Score=${score}`;
+    const analysis = this.getGameAnalysis();
+    return this.analyzer.getAnalysisSummary(analysis);
   }
 
   /**
@@ -88,7 +101,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle PLAY_CARD state - intelligently place card on existing character stack or create new one
+   * Handle PLAY_CARD state - intelligently place card using game state analysis
    */
   private handlePlayCard(): void {
     const hand = this.player.getHand();
@@ -99,20 +112,76 @@ export class AIPlayer {
       return;
     }
 
-    // Simple strategy: play first card in hand
-    const cardToPlay = cards[0];
+    const analysis = this.getGameAnalysis();
+    const cardToPlay = this.selectBestCard(cards, analysis);
     this.lastPlayedCard = cardToPlay;
     
-    const placement = this.findBestPlacement(cardToPlay);
+    const placement = this.findBestPlacement(cardToPlay, analysis);
     
-    console.log(`AI: Playing card ${cardToPlay.toString()} ${placement.targetStackId ? 'on existing stack' : 'on new stack'}`);
+    console.log(`AI: Playing card ${cardToPlay.toString()} ${placement.targetStackId ? 'on existing stack' : 'on new stack'} (${analysis.gamePhase} phase, ${analysis.threatLevel} threat)`);
     this.player.playCard(cardToPlay, placement);
   }
 
   /**
-   * Find the best placement for a card - prioritize existing character stacks
+   * Select the best card to play based on game state analysis
    */
-  private findBestPlacement(card: Card): PlayCardOptions {
+  private selectBestCard(cards: Card[], analysis: GameAnalysis): Card {
+    // Priority 1: Cards that complete own stacks
+    for (const opportunity of analysis.completionOpportunities) {
+      const completionCard = cards.find(card => 
+        (card.character === opportunity.character && card.bodyPart === opportunity.neededCard) ||
+        card.isWild()
+      );
+      if (completionCard) {
+        return completionCard;
+      }
+    }
+
+    // Priority 2: Cards that block critical opponent completions
+    for (const block of analysis.blockingOpportunities) {
+      if (block.urgency === 'critical') {
+        const blockingCard = cards.find(card => 
+          card.bodyPart === block.targetPile || card.isWild()
+        );
+        if (blockingCard) {
+          return blockingCard;
+        }
+      }
+    }
+
+    // Priority 3: Cards for existing character stacks (continuation)
+    const myStacks = this.player.getMyStacks();
+    for (const stack of myStacks) {
+      const topCards = stack.getTopCards();
+      const character = this.getStackCharacter(topCards);
+      if (character && character !== Character.Wild) {
+        const continuationCard = cards.find(card => 
+          card.character === character && !card.isWild()
+        );
+        if (continuationCard) {
+          return continuationCard;
+        }
+      }
+    }
+
+    // Priority 4: High-value characters in early/mid game
+    if (analysis.gamePhase !== 'late') {
+      const highValueCards = cards.filter(card => 
+        !card.isWild() && [Character.Ninja, Character.Pirate].includes(card.character)
+      );
+      if (highValueCards.length > 0) {
+        return highValueCards[0];
+      }
+    }
+
+    // Fallback: First available card
+    return cards[0];
+  }
+
+  /**
+   * Find the best placement for a card using game state analysis
+   */
+  private findBestPlacement(card: Card, _analysis?: GameAnalysis): PlayCardOptions {
     const myStacks = this.player.getMyStacks();
     
     // Skip wild cards for now - they need special handling
@@ -159,18 +228,27 @@ export class AIPlayer {
    */
   private getStackCharacter(topCards: { head?: Card; torso?: Card; legs?: Card }): Character | null {
     // Check head card first
-    if (topCards.head && topCards.head.character !== Character.Wild) {
-      return topCards.head.getEffectiveCharacter();
+    if (topCards.head) {
+      const effectiveChar = topCards.head.getEffectiveCharacter();
+      if (effectiveChar !== Character.Wild) {
+        return effectiveChar;
+      }
     }
     
     // Check torso card
-    if (topCards.torso && topCards.torso.character !== Character.Wild) {
-      return topCards.torso.getEffectiveCharacter();
+    if (topCards.torso) {
+      const effectiveChar = topCards.torso.getEffectiveCharacter();
+      if (effectiveChar !== Character.Wild) {
+        return effectiveChar;
+      }
     }
     
     // Check legs card
-    if (topCards.legs && topCards.legs.character !== Character.Wild) {
-      return topCards.legs.getEffectiveCharacter();
+    if (topCards.legs) {
+      const effectiveChar = topCards.legs.getEffectiveCharacter();
+      if (effectiveChar !== Character.Wild) {
+        return effectiveChar;
+      }
     }
 
     return null; // No clear character type

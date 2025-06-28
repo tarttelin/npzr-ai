@@ -26,11 +26,25 @@ describe('AIPlayer', () => {
 
     test('should provide strategy information', () => {
       const strategy = aiPlayer.getStrategy();
-      expect(strategy).toContain('AI (medium)');
-      expect(strategy).toContain('State=');
-      expect(strategy).toContain('Hand=');
-      expect(strategy).toContain('Stacks=');
-      expect(strategy).toContain('Score=');
+      expect(strategy).toContain('Game Analysis');
+      expect(strategy).toContain('Phase=');
+      expect(strategy).toContain('Threat=');
+      expect(strategy).toContain('Own=');
+      expect(strategy).toContain('Opponent=');
+      expect(strategy).toContain('Wilds=');
+      expect(strategy).toContain('Opportunities=');
+    });
+
+    test('should provide comprehensive game analysis', () => {
+      const analysis = aiPlayer.getGameAnalysis();
+      
+      expect(analysis.ownProgress.size).toBe(4);
+      expect(analysis.opponentProgress.size).toBe(4);
+      expect(analysis.gamePhase).toMatch(/early|mid|late/);
+      expect(analysis.threatLevel).toMatch(/low|medium|high/);
+      expect(Array.isArray(analysis.ownWildCards)).toBe(true);
+      expect(Array.isArray(analysis.completionOpportunities)).toBe(true);
+      expect(Array.isArray(analysis.blockingOpportunities)).toBe(true);
     });
 
     test('should correctly detect when it is AI turn', () => {
