@@ -48,33 +48,35 @@ export type GamePhase = 'early' | 'mid' | 'late';
 
 export class GameStateAnalyzer {
   /**
-   * Analyze all stacks to determine character progress
+   * Analyze all stacks and scores to determine character progress
    */
-  analyzeStacks(stacks: Stack[]): Map<Character, StackProgress> {
+  analyzeStacks(stacks: Stack[], score: Score): Map<Character, StackProgress> {
     const progressMap = new Map<Character, StackProgress>();
     
     // Initialize progress for all characters
     const characters = [Character.Ninja, Character.Pirate, Character.Zombie, Character.Robot];
     characters.forEach(char => {
+      const isAlreadyScored = score.hasCharacter(char);
       progressMap.set(char, {
         character: char,
-        hasHead: false,
-        hasTorso: false,
-        hasLegs: false,
-        completionLevel: 0,
-        isComplete: false,
-        missingPieces: [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]
+        hasHead: isAlreadyScored,
+        hasTorso: isAlreadyScored,
+        hasLegs: isAlreadyScored,
+        completionLevel: isAlreadyScored ? 3 : 0,
+        isComplete: isAlreadyScored,
+        missingPieces: isAlreadyScored ? [] : [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]
       });
     });
 
-    // Analyze each stack
+    // Analyze each stack (only for characters not already scored)
     stacks.forEach(stack => {
       const topCards = stack.getTopCards();
       const character = this.determineStackCharacter(topCards);
       
       if (character && character !== Character.Wild) {
         const progress = progressMap.get(character);
-        if (progress) {
+        if (progress && !progress.isComplete) {
+          // Only update if character hasn't been scored yet
           // Update piece presence
           if (topCards.head) progress.hasHead = true;
           if (topCards.torso) progress.hasTorso = true;
@@ -169,9 +171,9 @@ export class GameStateAnalyzer {
   /**
    * Find opportunities to complete own stacks
    */
-  findCompletionOpportunities(hand: Card[], ownStacks: Stack[]): CompletionOpportunity[] {
+  findCompletionOpportunities(hand: Card[], ownStacks: Stack[], ownScore: Score): CompletionOpportunity[] {
     const opportunities: CompletionOpportunity[] = [];
-    const ownProgress = this.analyzeStacks(ownStacks);
+    const ownProgress = this.analyzeStacks(ownStacks, ownScore);
 
     ownProgress.forEach(progress => {
       if (!progress.isComplete && progress.completionLevel >= 2) {
@@ -213,9 +215,9 @@ export class GameStateAnalyzer {
   /**
    * Find opportunities to block opponent completions
    */
-  findBlockingOpportunities(hand: Card[], opponentStacks: Stack[]): BlockingOpportunity[] {
+  findBlockingOpportunities(hand: Card[], opponentStacks: Stack[], opponentScore: Score): BlockingOpportunity[] {
     const opportunities: BlockingOpportunity[] = [];
-    const opponentProgress = this.analyzeStacks(opponentStacks);
+    const opponentProgress = this.analyzeStacks(opponentStacks, opponentScore);
 
     opponentStacks.forEach(stack => {
       const topCards = stack.getTopCards();
@@ -263,20 +265,22 @@ export class GameStateAnalyzer {
     ownScore: Score, 
     opponentScore: Score
   ): GameAnalysis {
-    const ownProgress = this.analyzeStacks(ownStacks);
-    const opponentProgress = this.analyzeStacks(opponentStacks);
+    const ownProgress = this.analyzeStacks(ownStacks, ownScore);
+    const opponentProgress = this.analyzeStacks(opponentStacks, opponentScore);
     const handAnalysis = this.analyzeHand(ownHand);
     const threatLevel = this.assessThreatLevel(opponentProgress);
     const gamePhase = this.determineGamePhase(ownScore, opponentScore);
     
     const completionOpportunities = this.findCompletionOpportunities(
       ownHand.getCards(), 
-      ownStacks
+      ownStacks,
+      ownScore
     );
     
     const blockingOpportunities = this.findBlockingOpportunities(
       ownHand.getCards(), 
-      opponentStacks
+      opponentStacks,
+      opponentScore
     );
 
     return {

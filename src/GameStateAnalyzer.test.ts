@@ -26,7 +26,8 @@ describe('GameStateAnalyzer', () => {
 
   describe('analyzeStacks', () => {
     test('should analyze empty stacks correctly', () => {
-      const result = analyzer.analyzeStacks([]);
+      const emptyScore = new Score();
+      const result = analyzer.analyzeStacks([], emptyScore);
       
       expect(result.size).toBe(4);
       expect(result.get(Character.Ninja)).toEqual({
@@ -49,7 +50,8 @@ describe('GameStateAnalyzer', () => {
       stack.addCard(ninjaHead, BodyPart.Head);
       stack.addCard(ninjaTorso, BodyPart.Torso);
 
-      const result = analyzer.analyzeStacks([stack]);
+      const emptyScore = new Score();
+      const result = analyzer.analyzeStacks([stack], emptyScore);
       const ninjaProgress = result.get(Character.Ninja);
 
       expect(ninjaProgress).toEqual({
@@ -73,7 +75,8 @@ describe('GameStateAnalyzer', () => {
       stack.addCard(ninjaTorso, BodyPart.Torso);
       stack.addCard(ninjaLegs, BodyPart.Legs);
 
-      const result = analyzer.analyzeStacks([stack]);
+      const emptyScore = new Score();
+      const result = analyzer.analyzeStacks([stack], emptyScore);
       const ninjaProgress = result.get(Character.Ninja);
 
       expect(ninjaProgress).toEqual({
@@ -95,7 +98,8 @@ describe('GameStateAnalyzer', () => {
       pirateStack.addCard(new Card('card2', Character.Pirate, BodyPart.Torso), BodyPart.Torso);
       pirateStack.addCard(new Card('card3', Character.Pirate, BodyPart.Legs), BodyPart.Legs);
 
-      const result = analyzer.analyzeStacks([ninjaStack, pirateStack]);
+      const emptyScore = new Score();
+      const result = analyzer.analyzeStacks([ninjaStack, pirateStack], emptyScore);
       
       expect(result.get(Character.Ninja)?.completionLevel).toBe(1);
       expect(result.get(Character.Pirate)?.completionLevel).toBe(2);
@@ -109,11 +113,52 @@ describe('GameStateAnalyzer', () => {
       wildCard.nominate(Character.Ninja, BodyPart.Head);
       stack.addCard(wildCard, BodyPart.Head);
 
-      const result = analyzer.analyzeStacks([stack]);
+      const emptyScore = new Score();
+      const result = analyzer.analyzeStacks([stack], emptyScore);
       const ninjaProgress = result.get(Character.Ninja);
 
       expect(ninjaProgress?.hasHead).toBe(true);
       expect(ninjaProgress?.completionLevel).toBe(1);
+    });
+
+    test('should include already scored characters as complete', () => {
+      const score = new Score();
+      score.addCharacter(Character.Ninja);
+      score.addCharacter(Character.Pirate);
+
+      // Create an incomplete stack for zombie
+      const zombieStack = new Stack('stack1', 'player1');
+      zombieStack.addCard(new Card('card1', Character.Zombie, BodyPart.Head), BodyPart.Head);
+
+      const result = analyzer.analyzeStacks([zombieStack], score);
+
+      // Ninja and Pirate should be marked as complete from score
+      expect(result.get(Character.Ninja)).toEqual({
+        character: Character.Ninja,
+        hasHead: true,
+        hasTorso: true,
+        hasLegs: true,
+        completionLevel: 3,
+        isComplete: true,
+        missingPieces: []
+      });
+
+      expect(result.get(Character.Pirate)).toEqual({
+        character: Character.Pirate,
+        hasHead: true,
+        hasTorso: true,
+        hasLegs: true,
+        completionLevel: 3,
+        isComplete: true,
+        missingPieces: []
+      });
+
+      // Zombie should show stack progress
+      expect(result.get(Character.Zombie)?.completionLevel).toBe(1);
+      expect(result.get(Character.Zombie)?.isComplete).toBe(false);
+
+      // Robot should be empty
+      expect(result.get(Character.Robot)?.completionLevel).toBe(0);
     });
   });
 
@@ -262,7 +307,8 @@ describe('GameStateAnalyzer', () => {
         new Card('card4', Character.Pirate, BodyPart.Head)
       ];
 
-      const result = analyzer.findCompletionOpportunities(hand, [stack]);
+      const emptyScore = new Score();
+      const result = analyzer.findCompletionOpportunities(hand, [stack], emptyScore);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -283,7 +329,8 @@ describe('GameStateAnalyzer', () => {
         new Card('card4', Character.Ninja, BodyPart.Head)
       ];
 
-      const result = analyzer.findCompletionOpportunities(hand, [stack]);
+      const emptyScore = new Score();
+      const result = analyzer.findCompletionOpportunities(hand, [stack], emptyScore);
 
       expect(result).toHaveLength(1);
       expect(result[0].character).toBe(Character.Pirate);
@@ -298,7 +345,8 @@ describe('GameStateAnalyzer', () => {
         new Card('card2', Character.Pirate, BodyPart.Head)
       ];
 
-      const result = analyzer.findCompletionOpportunities(hand, [stack]);
+      const emptyScore = new Score();
+      const result = analyzer.findCompletionOpportunities(hand, [stack], emptyScore);
       expect(result).toHaveLength(0);
     });
 
@@ -318,11 +366,31 @@ describe('GameStateAnalyzer', () => {
         new Card('card5', Character.Pirate, BodyPart.Torso)
       ];
 
-      const result = analyzer.findCompletionOpportunities(hand, [stack1, stack2]);
+      const emptyScore = new Score();
+      const result = analyzer.findCompletionOpportunities(hand, [stack1, stack2], emptyScore);
 
       expect(result).toHaveLength(1); // Only high priority one found
       expect(result[0].priority).toBe('high');
       expect(result[0].character).toBe(Character.Ninja);
+    });
+
+    test('should not suggest completing already scored characters', () => {
+      const stack = new Stack('stack1', 'player1');
+      stack.addCard(new Card('card1', Character.Ninja, BodyPart.Head), BodyPart.Head);
+      stack.addCard(new Card('card2', Character.Ninja, BodyPart.Torso), BodyPart.Torso);
+
+      const hand = [
+        new Card('card3', Character.Ninja, BodyPart.Legs)
+      ];
+
+      // Ninja is already scored
+      const score = new Score();
+      score.addCharacter(Character.Ninja);
+
+      const result = analyzer.findCompletionOpportunities(hand, [stack], score);
+
+      // Should not suggest completing ninja since it's already scored
+      expect(result).toHaveLength(0);
     });
   });
 
@@ -337,7 +405,8 @@ describe('GameStateAnalyzer', () => {
         new Card('card4', Character.Pirate, BodyPart.Head)
       ];
 
-      const result = analyzer.findBlockingOpportunities(hand, [stack]);
+      const emptyScore = new Score();
+      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -357,7 +426,8 @@ describe('GameStateAnalyzer', () => {
         new Card('card3', Character.Wild, BodyPart.Legs)
       ];
 
-      const result = analyzer.findBlockingOpportunities(hand, [stack]);
+      const emptyScore = new Score();
+      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
 
       expect(result).toHaveLength(1);
       expect(result[0].urgency).toBe('critical');
@@ -371,7 +441,8 @@ describe('GameStateAnalyzer', () => {
         new Card('card2', Character.Pirate, BodyPart.Head)
       ];
 
-      const result = analyzer.findBlockingOpportunities(hand, [stack]);
+      const emptyScore = new Score();
+      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
       expect(result).toHaveLength(0);
     });
   });
