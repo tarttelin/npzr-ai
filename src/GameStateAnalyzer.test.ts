@@ -1,4 +1,4 @@
-import { GameStateAnalyzer, CompletionOpportunity, BlockingOpportunity } from './GameStateAnalyzer.js';
+import { GameStateAnalyzer, CompletionOpportunity, DisruptionOpportunity } from './GameStateAnalyzer.js';
 import { GameEngine } from './GameEngine.js';
 import { Player } from './Player.js';
 import { Card, Character, BodyPart } from './Card.js';
@@ -406,7 +406,7 @@ describe('GameStateAnalyzer', () => {
       ];
 
       const emptyScore = new Score();
-      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
+      const result = analyzer.findDisruptionOpportunities(hand, [stack], emptyScore);
 
       expect(result).toHaveLength(2);
       expect(result).toEqual(expect.arrayContaining([
@@ -435,7 +435,7 @@ describe('GameStateAnalyzer', () => {
       ];
 
       const emptyScore = new Score();
-      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
+      const result = analyzer.findDisruptionOpportunities(hand, [stack], emptyScore);
 
       // Wild card can disrupt both head and torso since it's universal
       expect(result).toHaveLength(2);
@@ -464,7 +464,7 @@ describe('GameStateAnalyzer', () => {
       ];
 
       const emptyScore = new Score();
-      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
+      const result = analyzer.findDisruptionOpportunities(hand, [stack], emptyScore);
       expect(result).toHaveLength(0);
     });
   });
@@ -501,7 +501,7 @@ describe('GameStateAnalyzer', () => {
       expect(result.gamePhase).toBe('early');
       expect(result.threatLevel).toBe('low');
       expect(result.completionOpportunities).toHaveLength(1);
-      expect(result.blockingOpportunities).toHaveLength(1); // Wild card can disrupt opponent's pirate head
+      expect(result.disruptionOpportunities).toHaveLength(1); // Wild card can disrupt opponent's pirate head
     });
   });
 
@@ -525,7 +525,7 @@ describe('GameStateAnalyzer', () => {
         gamePhase: 'mid' as const,
         threatLevel: 'medium' as const,
         completionOpportunities: [{} as CompletionOpportunity, {} as CompletionOpportunity],
-        blockingOpportunities: []
+        disruptionOpportunities: []
       };
 
       const result = analyzer.getAnalysisSummary(analysis);

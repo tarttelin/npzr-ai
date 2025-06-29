@@ -25,7 +25,7 @@ export interface CompletionOpportunity {
   priority: 'high' | 'medium' | 'low';
 }
 
-export interface BlockingOpportunity {
+export interface DisruptionOpportunity {
   character: Character;
   stackId: string;
   targetPile: BodyPart;
@@ -40,7 +40,7 @@ export interface GameAnalysis {
   gamePhase: 'early' | 'mid' | 'late';
   threatLevel: 'low' | 'medium' | 'high';
   completionOpportunities: CompletionOpportunity[];
-  blockingOpportunities: BlockingOpportunity[];
+  disruptionOpportunities: DisruptionOpportunity[];
 }
 
 export type ThreatLevel = 'low' | 'medium' | 'high';
@@ -213,10 +213,10 @@ export class GameStateAnalyzer {
   }
 
   /**
-   * Find opportunities to block opponent completions
+   * Find opportunities to disrupt opponent progress by placing different characters on their existing pieces
    */
-  findBlockingOpportunities(hand: Card[], opponentStacks: Stack[], opponentScore: Score): BlockingOpportunity[] {
-    const opportunities: BlockingOpportunity[] = [];
+  findDisruptionOpportunities(hand: Card[], opponentStacks: Stack[], opponentScore: Score): DisruptionOpportunity[] {
+    const opportunities: DisruptionOpportunity[] = [];
     const opponentProgress = this.analyzeStacks(opponentStacks, opponentScore);
 
     opponentStacks.forEach(stack => {
@@ -280,7 +280,7 @@ export class GameStateAnalyzer {
       ownScore
     );
     
-    const blockingOpportunities = this.findBlockingOpportunities(
+    const disruptionOpportunities = this.findDisruptionOpportunities(
       ownHand.getCards(), 
       opponentStacks,
       opponentScore
@@ -294,12 +294,12 @@ export class GameStateAnalyzer {
       gamePhase,
       threatLevel,
       completionOpportunities,
-      blockingOpportunities
+      disruptionOpportunities
     };
   }
 
   /**
-   * Get existing pieces for a specific character in a stack (for blocking disruption)
+   * Get existing pieces for a specific character in a stack (for disruption targeting)
    */
   private getExistingPieces(topCards: { head?: Card; torso?: Card; legs?: Card }, targetCharacter: Character): BodyPart[] {
     const existingPieces: BodyPart[] = [];

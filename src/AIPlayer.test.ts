@@ -44,7 +44,7 @@ describe('AIPlayer', () => {
       expect(analysis.threatLevel).toMatch(/low|medium|high/);
       expect(Array.isArray(analysis.ownWildCards)).toBe(true);
       expect(Array.isArray(analysis.completionOpportunities)).toBe(true);
-      expect(Array.isArray(analysis.blockingOpportunities)).toBe(true);
+      expect(Array.isArray(analysis.disruptionOpportunities)).toBe(true);
     });
 
     test('should correctly detect when it is AI turn', () => {

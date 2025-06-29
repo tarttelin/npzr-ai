@@ -33,7 +33,7 @@ describe('CardPlayEvaluator', () => {
       gamePhase: 'early',
       threatLevel: 'low',
       completionOpportunities: [],
-      blockingOpportunities: [],
+      disruptionOpportunities: [],
       ownWildCards: [],
       totalWildCards: 0
     };
@@ -117,8 +117,8 @@ describe('CardPlayEvaluator', () => {
     it('should coordinate placement and nomination for optimal blocking', () => {
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      // Setup critical blocking opportunity: opponent has Pirate Head that can be disrupted
-      mockGameAnalysis.blockingOpportunities = [{
+      // Setup critical disruption opportunity: opponent has Pirate Head that can be disrupted
+      mockGameAnalysis.disruptionOpportunities = [{
         character: Character.Pirate,
         stackId: 'opponentStack',
         targetPile: BodyPart.Head,
@@ -145,7 +145,7 @@ describe('CardPlayEvaluator', () => {
         expect(bestPlay.placement.targetPile).toBe(BodyPart.Head);
         expect(bestPlay.nomination.character).not.toBe(Character.Pirate); // Any character except Pirate disrupts the stack
         expect(bestPlay.nomination.bodyPart).toBe(BodyPart.Head);
-        expect(bestPlay.reasoning).toContain('Blocks critical opponent pirate head');
+        expect(bestPlay.reasoning).toContain('Disrupts critical opponent pirate head');
       }
     });
   });
@@ -286,7 +286,7 @@ describe('CardPlayEvaluator', () => {
         { character: Character.Pirate, stackId: 'stack2', neededCard: BodyPart.Torso, priority: 'medium' }
       ];
       
-      mockGameAnalysis.blockingOpportunities = [
+      mockGameAnalysis.disruptionOpportunities = [
         { character: Character.Robot, stackId: 'opStack1', targetPile: BodyPart.Legs, urgency: 'critical' },
         { character: Character.Zombie, stackId: 'opStack2', targetPile: BodyPart.Head, urgency: 'important' }
       ];
@@ -313,12 +313,12 @@ describe('CardPlayEvaluator', () => {
       
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      // Setup scenario where Head blocking is much stronger than other placements
-      mockGameAnalysis.blockingOpportunities = [{
+      // Setup scenario where Head disruption is much stronger than other placements
+      mockGameAnalysis.disruptionOpportunities = [{
         character: Character.Pirate,
         stackId: 'opponentStack',
         targetPile: BodyPart.Head,
-        urgency: 'critical' // High blocking value - opponent has Pirate Head that can be disrupted
+        urgency: 'critical' // High disruption value - opponent has Pirate Head that can be disrupted
       }];
       
       const ownStack = {
@@ -349,12 +349,12 @@ describe('CardPlayEvaluator', () => {
       
       expect(isWildCardPlayOption(bestPlay!)).toBe(true);
       if (isWildCardPlayOption(bestPlay!)) {
-        // Should choose Head position for strong blocking value, nominating as different character
+        // Should choose Head position for strong disruption value, nominating as different character
         expect(bestPlay.placement.targetPile).toBe(BodyPart.Head);
-        expect(bestPlay.nomination.character).not.toBe(Character.Pirate); // Blocks by using different character
+        expect(bestPlay.nomination.character).not.toBe(Character.Pirate); // Disrupts by using different character
         expect(bestPlay.nomination.bodyPart).toBe(BodyPart.Head);
-        expect(bestPlay.combinedValue).toBeGreaterThan(800); // Strong combined value from blocking
-        expect(bestPlay.reasoning).toContain('Blocks critical opponent pirate head');
+        expect(bestPlay.combinedValue).toBeGreaterThan(800); // Strong combined value from disruption
+        expect(bestPlay.reasoning).toContain('Disrupts critical opponent pirate head');
       }
     });
   });

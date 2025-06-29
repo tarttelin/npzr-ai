@@ -228,10 +228,10 @@ export class AIPlayer {
       if (move) return move;
     }
 
-    // Priority 2: Moves that block critical opponent completions
-    for (const block of analysis.blockingOpportunities) {
-      if (block.urgency === 'critical') {
-        const move = this.findMoveForBlocking(block, allStacks);
+    // Priority 2: Moves that disrupt critical opponent completions
+    for (const disruption of analysis.disruptionOpportunities) {
+      if (disruption.urgency === 'critical') {
+        const move = this.findMoveForDisruption(disruption, allStacks);
         if (move) return move;
       }
     }
@@ -267,22 +267,22 @@ export class AIPlayer {
   }
 
   /**
-   * Find a move that can block opponent completion
+   * Find a move that can disrupt opponent completion
    */
-  private findMoveForBlocking(block: any, allStacks: Stack[]): MoveOptions | null {
-    // Look for cards that can be moved to block the opponent
+  private findMoveForDisruption(disruption: any, allStacks: Stack[]): MoveOptions | null {
+    // Look for cards that can be moved to disrupt the opponent
     for (const fromStack of allStacks) {
-      const cards = fromStack.getCardsFromPile(block.targetPile);
+      const cards = fromStack.getCardsFromPile(disruption.targetPile);
       if (cards.length > 0) {
         const card = cards[cards.length - 1]; // Top card
-        const targetStack = allStacks.find(s => s.getId() === block.stackId);
-        if (targetStack && targetStack.canAcceptCard(card, block.targetPile)) {
+        const targetStack = allStacks.find(s => s.getId() === disruption.stackId);
+        if (targetStack && targetStack.canAcceptCard(card, disruption.targetPile)) {
           return {
             cardId: card.id,
             fromStackId: fromStack.getId(),
-            fromPile: block.targetPile,
-            toStackId: block.stackId,
-            toPile: block.targetPile
+            fromPile: disruption.targetPile,
+            toStackId: disruption.stackId,
+            toPile: disruption.targetPile
           };
         }
       }

@@ -1,6 +1,6 @@
 import { Card, Character, BodyPart } from './Card.js';
 import { PlayCardOptions } from './Player.js';
-import { GameAnalysis, StackProgress } from './GameStateAnalyzer.js';
+import { GameAnalysis, StackProgress, DisruptionOpportunity } from './GameStateAnalyzer.js';
 import { Stack } from './Stack.js';
 import { Hand } from './Hand.js';
 
@@ -18,7 +18,7 @@ export interface RegularCardEvaluation {
   placement: PlayCardOptions;
   value: number;
   reasoning: string;
-  type: 'completion' | 'building' | 'blocking' | 'neutral';
+  type: 'completion' | 'building' | 'disruption' | 'neutral';
 }
 
 export interface WildCardPlayOption {
@@ -30,7 +30,7 @@ export interface WildCardPlayOption {
   placementValue: number;
   nominationValue: number;
   reasoning: string;
-  type: 'completion' | 'building' | 'blocking' | 'neutral';
+  type: 'completion' | 'building' | 'disruption' | 'neutral';
 }
 
 export type CardPlayEvaluation = RegularCardEvaluation | WildCardPlayOption;
@@ -116,8 +116,8 @@ export class CardPlayEvaluator {
     // Find completion moves
     evaluations.push(...this.findCompletionMoves([card], ownStacks, gameAnalysis));
     
-    // Find blocking moves
-    evaluations.push(...this.findBlockingMoves([card], opponentStacks, gameAnalysis));
+    // Find disruption moves
+    evaluations.push(...this.findDisruptionMoves([card], opponentStacks, gameAnalysis));
     
     // Find building moves
     evaluations.push(...this.findBuildingMoves([card], ownStacks, gameAnalysis));
@@ -157,8 +157,8 @@ export class CardPlayEvaluator {
   /**
    * Get placement opportunities for a wild card at a specific position
    */
-  private getWildCardPlacementOptions(wildCard: Card, position: BodyPart, gameAnalysis: GameAnalysis, ownStacks: Stack[], opponentStacks: Stack[]): Array<{placement: PlayCardOptions, value: number, reasoning: string, type: 'completion' | 'building' | 'blocking' | 'neutral', targetStack?: Stack}> {
-    const options: Array<{placement: PlayCardOptions, value: number, reasoning: string, type: 'completion' | 'building' | 'blocking' | 'neutral', targetStack?: Stack}> = [];
+  private getWildCardPlacementOptions(wildCard: Card, position: BodyPart, gameAnalysis: GameAnalysis, ownStacks: Stack[], opponentStacks: Stack[]): Array<{placement: PlayCardOptions, value: number, reasoning: string, type: 'completion' | 'building' | 'disruption' | 'neutral', targetStack?: Stack}> {
+    const options: Array<{placement: PlayCardOptions, value: number, reasoning: string, type: 'completion' | 'building' | 'disruption' | 'neutral', targetStack?: Stack}> = [];
 
     // Check for completion opportunities at this position
     for (const opportunity of gameAnalysis.completionOpportunities) {
@@ -179,22 +179,22 @@ export class CardPlayEvaluator {
       }
     }
 
-    // Check for blocking opportunities at this position
-    for (const blockingOp of gameAnalysis.blockingOpportunities) {
-      if (blockingOp.targetPile === position) {
-        const stack = opponentStacks.find(s => s.getId() === blockingOp.stackId);
+    // Check for disruption opportunities at this position
+    for (const disruptionOp of gameAnalysis.disruptionOpportunities) {
+      if (disruptionOp.targetPile === position) {
+        const stack = opponentStacks.find(s => s.getId() === disruptionOp.stackId);
         if (stack) {
-          const stackProgress = gameAnalysis.opponentProgress.get(blockingOp.character);
-          const value = this.calculateBlockingValue(stackProgress, blockingOp.urgency);
+          const stackProgress = gameAnalysis.opponentProgress.get(disruptionOp.character);
+          const value = this.calculateDisruptionValue(stackProgress, disruptionOp.urgency);
           
           options.push({
             placement: {
-              targetStackId: blockingOp.stackId,
+              targetStackId: disruptionOp.stackId,
               targetPile: position
             },
             value,
-            reasoning: `Blocks ${blockingOp.character} ${blockingOp.targetPile} (${blockingOp.urgency})`,
-            type: 'blocking',
+            reasoning: `Disrupts ${disruptionOp.character} ${disruptionOp.targetPile} (${disruptionOp.urgency})`,
+            type: 'disruption',
             targetStack: stack
           });
         }
@@ -335,29 +335,29 @@ export class CardPlayEvaluator {
     return evaluations;
   }
 
-  private findBlockingMoves(hand: Card[], opponentStacks: Stack[], gameAnalysis: GameAnalysis): RegularCardEvaluation[] {
+  private findDisruptionMoves(hand: Card[], opponentStacks: Stack[], gameAnalysis: GameAnalysis): RegularCardEvaluation[] {
     const evaluations: RegularCardEvaluation[] = [];
 
-    for (const blockingOp of gameAnalysis.blockingOpportunities) {
+    for (const disruptionOp of gameAnalysis.disruptionOpportunities) {
       const suitableCards = hand.filter(card => {
-        return card.bodyPart === blockingOp.targetPile && card.character !== blockingOp.character;
+        return card.bodyPart === disruptionOp.targetPile && card.character !== disruptionOp.character;
       });
 
       for (const card of suitableCards) {
-        const stack = opponentStacks.find(s => s.getId() === blockingOp.stackId);
+        const stack = opponentStacks.find(s => s.getId() === disruptionOp.stackId);
         if (stack) {
-          const stackProgress = gameAnalysis.opponentProgress.get(blockingOp.character);
-          const value = this.calculateBlockingValue(stackProgress, blockingOp.urgency);
+          const stackProgress = gameAnalysis.opponentProgress.get(disruptionOp.character);
+          const value = this.calculateDisruptionValue(stackProgress, disruptionOp.urgency);
           
           evaluations.push({
             card,
             placement: {
-              targetStackId: blockingOp.stackId,
-              targetPile: blockingOp.targetPile
+              targetStackId: disruptionOp.stackId,
+              targetPile: disruptionOp.targetPile
             },
             value,
-            reasoning: `Blocks ${blockingOp.character.charAt(0).toUpperCase() + blockingOp.character.slice(1)} ${blockingOp.targetPile} (${blockingOp.urgency}) by playing ${card.character.charAt(0).toUpperCase() + card.character.slice(1)} ${card.bodyPart}`,
-            type: 'blocking'
+            reasoning: `Disrupts ${disruptionOp.character.charAt(0).toUpperCase() + disruptionOp.character.slice(1)} ${disruptionOp.targetPile} (${disruptionOp.urgency}) by playing ${card.character.charAt(0).toUpperCase() + card.character.slice(1)} ${card.bodyPart}`,
+            type: 'disruption'
           });
         }
       }
@@ -426,7 +426,7 @@ export class CardPlayEvaluator {
     }
 
     // Never save wild cards if opponent has critical threats
-    const criticalThreats = gameAnalysis.blockingOpportunities.filter(op => op.urgency === 'critical');
+    const criticalThreats = gameAnalysis.disruptionOpportunities.filter((op: DisruptionOpportunity) => op.urgency === 'critical');
     if (criticalThreats.length > 0) {
       return false;
     }
@@ -446,7 +446,7 @@ export class CardPlayEvaluator {
     return true;
   }
 
-  private calculateBlockingValue(stackProgress: StackProgress | undefined, urgency: string): number {
+  private calculateDisruptionValue(stackProgress: StackProgress | undefined, urgency: string): number {
     switch (urgency) {
       case 'critical':
         return 800;
@@ -530,14 +530,14 @@ export class CardPlayEvaluator {
       reasoning = `Completes ${character} stack immediately`;
       completesStack = true;
     } else {
-      // Check for critical blocking
-      const criticalBlock = gameAnalysis.blockingOpportunities.find(
-        block => block.character !== character && block.targetPile === bodyPart && block.urgency === 'critical'
+      // Check for critical disruption
+      const criticalDisruption = gameAnalysis.disruptionOpportunities.find(
+        disrupt => disrupt.character !== character && disrupt.targetPile === bodyPart && disrupt.urgency === 'critical'
       );
       
-      if (criticalBlock) {
+      if (criticalDisruption) {
         value = 800;
-        reasoning = `Blocks critical opponent ${criticalBlock.character} ${bodyPart} by playing ${character} ${bodyPart}`;
+        reasoning = `Disrupts critical opponent ${criticalDisruption.character} ${bodyPart} by playing ${character} ${bodyPart}`;
       } else {
         // Check for building toward completion
         const stackProgress = gameAnalysis.ownProgress.get(character);
