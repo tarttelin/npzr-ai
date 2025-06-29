@@ -340,7 +340,7 @@ export class CardPlayEvaluator {
 
     for (const blockingOp of gameAnalysis.blockingOpportunities) {
       const suitableCards = hand.filter(card => {
-        return card.bodyPart === blockingOp.targetPile;
+        return card.bodyPart === blockingOp.targetPile && card.character !== blockingOp.character;
       });
 
       for (const card of suitableCards) {
@@ -356,7 +356,7 @@ export class CardPlayEvaluator {
               targetPile: blockingOp.targetPile
             },
             value,
-            reasoning: `Blocks ${blockingOp.character.charAt(0).toUpperCase() + blockingOp.character.slice(1)} ${blockingOp.targetPile} (${blockingOp.urgency})`,
+            reasoning: `Blocks ${blockingOp.character.charAt(0).toUpperCase() + blockingOp.character.slice(1)} ${blockingOp.targetPile} (${blockingOp.urgency}) by playing ${card.character.charAt(0).toUpperCase() + card.character.slice(1)} ${card.bodyPart}`,
             type: 'blocking'
           });
         }
@@ -532,12 +532,12 @@ export class CardPlayEvaluator {
     } else {
       // Check for critical blocking
       const criticalBlock = gameAnalysis.blockingOpportunities.find(
-        block => block.character === character && block.targetPile === bodyPart && block.urgency === 'critical'
+        block => block.character !== character && block.targetPile === bodyPart && block.urgency === 'critical'
       );
       
       if (criticalBlock) {
         value = 800;
-        reasoning = `Blocks critical opponent ${character} ${bodyPart}`;
+        reasoning = `Blocks critical opponent ${criticalBlock.character} ${bodyPart} by playing ${character} ${bodyPart}`;
       } else {
         // Check for building toward completion
         const stackProgress = gameAnalysis.ownProgress.get(character);

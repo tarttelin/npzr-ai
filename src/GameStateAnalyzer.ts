@@ -226,18 +226,21 @@ export class GameStateAnalyzer {
       if (character && character !== Character.Wild) {
         const progress = opponentProgress.get(character);
         
-        if (progress && !progress.isComplete && progress.completionLevel >= 2) {
-          // Opponent is close to completion, check if we can block
-          progress.missingPieces.forEach(missingPiece => {
-            const canBlock = hand.some(card => 
-              card.bodyPart === missingPiece || card.isWild()
+        if (progress && !progress.isComplete && progress.completionLevel >= 1) {
+          // Opponent has progress, check if we can disrupt existing pieces
+          const existingPieces = this.getExistingPieces(topCards, character);
+          
+          existingPieces.forEach(existingPiece => {
+            const canDisrupt = hand.some(card => 
+              (card.bodyPart === existingPiece && card.character !== character) || 
+              card.isWild()
             );
             
-            if (canBlock) {
+            if (canDisrupt) {
               opportunities.push({
                 character,
                 stackId: stack.getId(),
-                targetPile: missingPiece,
+                targetPile: existingPiece, // Target existing piece to disrupt
                 urgency: progress.completionLevel === 2 ? 'critical' : 'important'
               });
             }
@@ -293,6 +296,28 @@ export class GameStateAnalyzer {
       completionOpportunities,
       blockingOpportunities
     };
+  }
+
+  /**
+   * Get existing pieces for a specific character in a stack (for blocking disruption)
+   */
+  private getExistingPieces(topCards: { head?: Card; torso?: Card; legs?: Card }, targetCharacter: Character): BodyPart[] {
+    const existingPieces: BodyPart[] = [];
+    
+    // Check each position to see if it contains the target character
+    if (topCards.head && topCards.head.getEffectiveCharacter() === targetCharacter) {
+      existingPieces.push(BodyPart.Head);
+    }
+    
+    if (topCards.torso && topCards.torso.getEffectiveCharacter() === targetCharacter) {
+      existingPieces.push(BodyPart.Torso);
+    }
+    
+    if (topCards.legs && topCards.legs.getEffectiveCharacter() === targetCharacter) {
+      existingPieces.push(BodyPart.Legs);
+    }
+    
+    return existingPieces;
   }
 
   /**

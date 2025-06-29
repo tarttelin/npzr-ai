@@ -117,17 +117,21 @@ describe('CardPlayEvaluator', () => {
     it('should coordinate placement and nomination for optimal blocking', () => {
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      // Setup critical blocking opportunity at Torso position
+      // Setup critical blocking opportunity: opponent has Pirate Head that can be disrupted
       mockGameAnalysis.blockingOpportunities = [{
         character: Character.Pirate,
         stackId: 'opponentStack',
-        targetPile: BodyPart.Torso,
+        targetPile: BodyPart.Head,
         urgency: 'critical'
       }];
       
       const opponentStack = {
         getId: () => 'opponentStack',
-        getTopCards: () => ({ head: undefined, torso: undefined, legs: undefined }),
+        getTopCards: () => ({ 
+          head: new Card('2', Character.Pirate, BodyPart.Head), 
+          torso: new Card('3', Character.Pirate, BodyPart.Torso), 
+          legs: undefined 
+        }),
         canAcceptCard: () => true,
         getCardsFromPile: () => []
       } as any;
@@ -137,10 +141,11 @@ describe('CardPlayEvaluator', () => {
       
       expect(isWildCardPlayOption(bestPlay!)).toBe(true);
       if (isWildCardPlayOption(bestPlay!)) {
-        // Should choose Torso placement and Pirate nomination for blocking
-        expect(bestPlay.placement.targetPile).toBe(BodyPart.Torso);
-        expect(bestPlay.nomination.character).toBe(Character.Pirate);
-        expect(bestPlay.nomination.bodyPart).toBe(BodyPart.Torso);
+        // Should choose Head placement and nominate as DIFFERENT character to disrupt existing Pirate head
+        expect(bestPlay.placement.targetPile).toBe(BodyPart.Head);
+        expect(bestPlay.nomination.character).not.toBe(Character.Pirate); // Any character except Pirate disrupts the stack
+        expect(bestPlay.nomination.bodyPart).toBe(BodyPart.Head);
+        expect(bestPlay.reasoning).toContain('Blocks critical opponent pirate head');
       }
     });
   });
@@ -304,16 +309,16 @@ describe('CardPlayEvaluator', () => {
     it('should demonstrate coordination advantage over separate systems', () => {
       // Scenario: Universal wild with two possible placements
       // - Head position: good for building (300 points) + weak nomination (100 points) = 400 total
-      // - Torso position: okay building (200 points) + strong nomination (800 points) = 1000 total
+      // - Torso position: okay building (200 points) + strong blocking nomination (800 points) = 1000 total
       
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      // Setup scenario where Torso nomination is much stronger than Head
+      // Setup scenario where Head blocking is much stronger than other placements
       mockGameAnalysis.blockingOpportunities = [{
         character: Character.Pirate,
         stackId: 'opponentStack',
-        targetPile: BodyPart.Torso,
-        urgency: 'critical' // High nomination value
+        targetPile: BodyPart.Head,
+        urgency: 'critical' // High blocking value - opponent has Pirate Head that can be disrupted
       }];
       
       const ownStack = {
@@ -329,7 +334,11 @@ describe('CardPlayEvaluator', () => {
       
       const opponentStack = {
         getId: () => 'opponentStack',
-        getTopCards: () => ({ head: undefined, torso: undefined, legs: undefined }),
+        getTopCards: () => ({ 
+          head: new Card('3', Character.Pirate, BodyPart.Head), 
+          torso: new Card('4', Character.Pirate, BodyPart.Torso), 
+          legs: undefined 
+        }),
         canAcceptCard: () => true,
         getCardsFromPile: () => []
       } as any;
@@ -340,10 +349,12 @@ describe('CardPlayEvaluator', () => {
       
       expect(isWildCardPlayOption(bestPlay!)).toBe(true);
       if (isWildCardPlayOption(bestPlay!)) {
-        // Should choose Torso for the strong blocking nomination despite weaker building value
-        expect(bestPlay.placement.targetPile).toBe(BodyPart.Torso);
-        expect(bestPlay.nomination.character).toBe(Character.Pirate);
-        expect(bestPlay.combinedValue).toBeGreaterThan(800); // Strong combined value
+        // Should choose Head position for strong blocking value, nominating as different character
+        expect(bestPlay.placement.targetPile).toBe(BodyPart.Head);
+        expect(bestPlay.nomination.character).not.toBe(Character.Pirate); // Blocks by using different character
+        expect(bestPlay.nomination.bodyPart).toBe(BodyPart.Head);
+        expect(bestPlay.combinedValue).toBeGreaterThan(800); // Strong combined value from blocking
+        expect(bestPlay.reasoning).toContain('Blocks critical opponent pirate head');
       }
     });
   });
