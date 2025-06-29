@@ -1,4 +1,4 @@
-import { Card, Character, BodyPart, CardNomination } from './Card.js';
+import { Card, BodyPart, CardNomination } from './Card.js';
 import { Deck } from './Deck.js';
 import { Player, PlayCardOptions, MoveOptions } from './Player.js';
 import { Stack } from './Stack.js';

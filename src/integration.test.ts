@@ -8,7 +8,7 @@ import { Card } from './Card.js';
 function putCardOnTopOfDeck(engine: GameEngine, character: Character, bodyPart: BodyPart): boolean {
   // Access the private deck through the engine's internal state
   const deck = (engine as any).deck;
-  const players = (engine as any).players;
+  const _players = (engine as any).players;
   const cards = deck.cards;
   
   

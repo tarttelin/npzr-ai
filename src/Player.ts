@@ -2,7 +2,7 @@ import { Card, Character, BodyPart, CardNomination } from './Card.js';
 import { Hand } from './Hand.js';
 import { Stack } from './Stack.js';
 import { Score } from './Score.js';
-import { PlayerState, PlayerStateType } from './PlayerState.js';
+import { PlayerState } from './PlayerState.js';
 
 export interface PlayCardOptions {
   targetStackId?: string;

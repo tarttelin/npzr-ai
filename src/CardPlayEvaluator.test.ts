@@ -2,7 +2,7 @@ import { CardPlayEvaluator, isWildCardPlayOption } from './CardPlayEvaluator.js'
 import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { Hand } from './Hand.js';
-import { GameAnalysis, StackProgress } from './GameStateAnalyzer.js';
+import { GameAnalysis } from './GameStateAnalyzer.js';
 
 describe('CardPlayEvaluator', () => {
   let evaluator: CardPlayEvaluator;

@@ -1,4 +1,4 @@
-import { GameStateAnalyzer, CompletionOpportunity, DisruptionOpportunity } from './GameStateAnalyzer.js';
+import { GameStateAnalyzer, CompletionOpportunity } from './GameStateAnalyzer.js';
 import { GameEngine } from './GameEngine.js';
 import { Player } from './Player.js';
 import { Card, Character, BodyPart } from './Card.js';
