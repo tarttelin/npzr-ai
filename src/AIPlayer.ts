@@ -3,18 +3,21 @@ import { PlayerStateType } from './PlayerState.js';
 import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
+import { CardSelector, CardEvaluation } from './CardSelector.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
   private lastPlayedCard: Card | null = null;
   private analyzer: GameStateAnalyzer;
+  private cardSelector: CardSelector;
 
   constructor(
     private readonly player: Player,
     private readonly difficulty: Difficulty
   ) {
     this.analyzer = new GameStateAnalyzer();
+    this.cardSelector = new CardSelector();
   }
 
   /**
@@ -101,7 +104,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle PLAY_CARD state - intelligently place card using game state analysis
+   * Handle PLAY_CARD state - intelligently place card using enhanced card selector
    */
   private handlePlayCard(): void {
     const hand = this.player.getHand();
@@ -113,115 +116,37 @@ export class AIPlayer {
     }
 
     const analysis = this.getGameAnalysis();
-    const cardToPlay = this.selectBestCard(cards, analysis);
-    this.lastPlayedCard = cardToPlay;
+    const myStacks = this.player.getMyStacks();
+    const opponentStacks = this.player.getOpponentStacks();
     
-    const placement = this.findBestPlacement(cardToPlay, analysis);
+    // Use CardSelector to evaluate all possible moves
+    const evaluations = this.cardSelector.evaluateAllMoves(cards, analysis, myStacks, opponentStacks);
+    const bestMove = this.cardSelector.selectBestMove(evaluations);
     
-    console.log(`AI: Playing card ${cardToPlay.toString()} ${placement.targetStackId ? 'on existing stack' : 'on new stack'} (${analysis.gamePhase} phase, ${analysis.threatLevel} threat)`);
-    this.player.playCard(cardToPlay, placement);
+    if (!bestMove) {
+      console.warn('AI: No valid moves found');
+      return;
+    }
+    
+    this.lastPlayedCard = bestMove.card;
+    
+    console.log(`AI: Playing ${bestMove.card.toString()} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
+    this.player.playCard(bestMove.card, bestMove.placement);
   }
 
   /**
-   * Select the best card to play based on game state analysis
+   * Get detailed move evaluation for debugging
    */
-  private selectBestCard(cards: Card[], analysis: GameAnalysis): Card {
-    // Priority 1: Cards that complete own stacks
-    for (const opportunity of analysis.completionOpportunities) {
-      const completionCard = cards.find(card => 
-        (card.character === opportunity.character && card.bodyPart === opportunity.neededCard) ||
-        card.isWild()
-      );
-      if (completionCard) {
-        return completionCard;
-      }
-    }
-
-    // Priority 2: Cards that block critical opponent completions
-    for (const block of analysis.blockingOpportunities) {
-      if (block.urgency === 'critical') {
-        const blockingCard = cards.find(card => 
-          card.bodyPart === block.targetPile || card.isWild()
-        );
-        if (blockingCard) {
-          return blockingCard;
-        }
-      }
-    }
-
-    // Priority 3: Cards for existing character stacks (continuation)
+  getMoveEvaluations(): CardEvaluation[] {
+    const hand = this.player.getHand();
+    const cards = hand.getCards();
+    const analysis = this.getGameAnalysis();
     const myStacks = this.player.getMyStacks();
-    for (const stack of myStacks) {
-      const topCards = stack.getTopCards();
-      const character = this.getStackCharacter(topCards);
-      if (character && character !== Character.Wild) {
-        const continuationCard = cards.find(card => 
-          card.character === character && !card.isWild()
-        );
-        if (continuationCard) {
-          return continuationCard;
-        }
-      }
-    }
-
-    // Priority 4: High-value characters in early/mid game
-    if (analysis.gamePhase !== 'late') {
-      const highValueCards = cards.filter(card => 
-        !card.isWild() && [Character.Ninja, Character.Pirate].includes(card.character)
-      );
-      if (highValueCards.length > 0) {
-        return highValueCards[0];
-      }
-    }
-
-    // Fallback: First available card
-    return cards[0];
-  }
-
-  /**
-   * Find the best placement for a card using game state analysis
-   */
-  private findBestPlacement(card: Card, _analysis?: GameAnalysis): PlayCardOptions {
-    const myStacks = this.player.getMyStacks();
+    const opponentStacks = this.player.getOpponentStacks();
     
-    // Skip wild cards for now - they need special handling
-    if (card.isWild()) {
-      return {
-        targetPile: BodyPart.Head // Default placement for wild cards
-      };
-    }
-
-    // Look for existing stacks with the same character
-    for (const stack of myStacks) {
-      const topCards = stack.getTopCards();
-      
-      // Check if this stack is for the same character
-      const stackCharacter = this.getStackCharacter(topCards);
-      if (stackCharacter === card.character) {
-        // Try to place the card in the appropriate pile
-        const targetPile = card.bodyPart;
-        
-        // Check if the pile already has a card of the same type
-        let existingCard: Card | undefined;
-        if (targetPile === BodyPart.Head) existingCard = topCards.head;
-        else if (targetPile === BodyPart.Torso) existingCard = topCards.torso;
-        else if (targetPile === BodyPart.Legs) existingCard = topCards.legs;
-        
-        if (!existingCard) {
-          // Empty pile - perfect place for this card
-          return {
-            targetStackId: stack.getId(),
-            targetPile: targetPile
-          };
-        }
-      }
-    }
-
-    // No suitable existing stack found - create new stack
-    return {
-      targetPile: card.bodyPart
-    };
+    return this.cardSelector.evaluateAllMoves(cards, analysis, myStacks, opponentStacks);
   }
+
 
   /**
    * Determine the character type of a stack based on its top cards
@@ -255,7 +180,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle NOMINATE_WILD state - nominate as first valid character/bodypart
+   * Handle NOMINATE_WILD state - intelligently nominate wild cards
    */
   private handleNominateWild(): void {
     if (!this.lastPlayedCard || !this.lastPlayedCard.isWild()) {
@@ -263,35 +188,148 @@ export class AIPlayer {
       return;
     }
 
-    // Simple strategy: nominate as Ninja Head (first valid combination)
-    const nomination = {
-      character: Character.Ninja,
-      bodyPart: BodyPart.Head
-    };
+    const analysis = this.getGameAnalysis();
+    const nomination = this.selectBestWildNomination(this.lastPlayedCard, analysis);
 
-    console.log(`AI: Nominating wild card as ${nomination.character} ${nomination.bodyPart}`);
+    console.log(`AI: Nominating wild card as ${nomination.character} ${nomination.bodyPart} (strategic choice)`);
     this.player.nominateWildCard(this.lastPlayedCard, nomination);
   }
 
   /**
-   * Handle MOVE_CARD state - move first available card to first available location
+   * Handle MOVE_CARD state - strategically move cards to optimize position
    */
   private handleMoveCard(): void {
-    const myStacks = this.player.getMyStacks();
-    const opponentStacks = this.player.getOpponentStacks();
-    const allStacks = [...myStacks, ...opponentStacks];
+    const analysis = this.getGameAnalysis();
+    const move = this.selectBestMove(analysis);
+    
+    if (move) {
+      console.log(`AI: Moving card ${move.cardId} strategically`);
+      this.player.moveCard(move);
+    } else {
+      console.warn('AI: No strategic moves found');
+    }
+  }
 
-    // Find first move opportunity
-    for (const fromStack of allStacks) {
-      const move = this.findFirstValidMove(fromStack, allStacks);
-      if (move) {
-        console.log(`AI: Moving card ${move.cardId} from ${move.fromStackId} to ${move.toStackId}`);
-        this.player.moveCard(move);
-        return;
+  /**
+   * Select the best wild card nomination based on strategic analysis
+   */
+  private selectBestWildNomination(wildCard: Card, analysis: GameAnalysis): { character: Character; bodyPart: BodyPart } {
+    // Priority 1: Nominate to complete own stacks
+    for (const opportunity of analysis.completionOpportunities) {
+      return {
+        character: opportunity.character,
+        bodyPart: opportunity.neededCard
+      };
+    }
+
+    // Priority 2: Nominate to block critical opponent threats
+    for (const block of analysis.blockingOpportunities) {
+      if (block.urgency === 'critical') {
+        return {
+          character: block.character,
+          bodyPart: block.targetPile
+        };
       }
     }
 
-    console.warn('AI: No valid moves found');
+    // Priority 3: Nominate based on existing own stacks (continuation)
+    const myStacks = this.player.getMyStacks();
+    for (const stack of myStacks) {
+      const topCards = stack.getTopCards();
+      const character = this.getStackCharacter(topCards);
+      if (character && character !== Character.Wild) {
+        // Find missing body part for this character
+        const missingParts = this.getMissingBodyParts(topCards);
+        if (missingParts.length > 0) {
+          return {
+            character: character,
+            bodyPart: missingParts[0] // Take first missing part
+          };
+        }
+      }
+    }
+
+    // Fallback: High-value character and head (most common need)
+    return {
+      character: Character.Ninja,
+      bodyPart: BodyPart.Head
+    };
+  }
+
+  /**
+   * Select the best strategic move from available options
+   */
+  private selectBestMove(analysis: GameAnalysis): MoveOptions | null {
+    const myStacks = this.player.getMyStacks();
+    const opponentStacks = this.player.getOpponentStacks();
+    const allStacks = [...myStacks, ...opponentStacks];
+    
+    // Priority 1: Moves that complete own characters
+    for (const opportunity of analysis.completionOpportunities) {
+      const move = this.findMoveForCompletion(opportunity, allStacks);
+      if (move) return move;
+    }
+
+    // Priority 2: Moves that block critical opponent completions
+    for (const block of analysis.blockingOpportunities) {
+      if (block.urgency === 'critical') {
+        const move = this.findMoveForBlocking(block, allStacks);
+        if (move) return move;
+      }
+    }
+
+    // Priority 3: Any valid move that improves position
+    return this.findFirstValidMove(allStacks[0], allStacks);
+  }
+
+  /**
+   * Find a move that can complete a character
+   */
+  private findMoveForCompletion(opportunity: any, allStacks: Stack[]): MoveOptions | null {
+    // Look for cards that can be moved to complete the stack
+    for (const fromStack of allStacks) {
+      const cards = fromStack.getCardsFromPile(opportunity.neededCard);
+      if (cards.length > 0) {
+        const card = cards[cards.length - 1]; // Top card
+        if (card.character === opportunity.character || card.isWild()) {
+          const targetStack = allStacks.find(s => s.getId() === opportunity.stackId);
+          if (targetStack && targetStack.canAcceptCard(card, opportunity.neededCard)) {
+            return {
+              cardId: card.id,
+              fromStackId: fromStack.getId(),
+              fromPile: opportunity.neededCard,
+              toStackId: opportunity.stackId,
+              toPile: opportunity.neededCard
+            };
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Find a move that can block opponent completion
+   */
+  private findMoveForBlocking(block: any, allStacks: Stack[]): MoveOptions | null {
+    // Look for cards that can be moved to block the opponent
+    for (const fromStack of allStacks) {
+      const cards = fromStack.getCardsFromPile(block.targetPile);
+      if (cards.length > 0) {
+        const card = cards[cards.length - 1]; // Top card
+        const targetStack = allStacks.find(s => s.getId() === block.stackId);
+        if (targetStack && targetStack.canAcceptCard(card, block.targetPile)) {
+          return {
+            cardId: card.id,
+            fromStackId: fromStack.getId(),
+            fromPile: block.targetPile,
+            toStackId: block.stackId,
+            toPile: block.targetPile
+          };
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -324,6 +362,17 @@ export class AIPlayer {
     }
 
     return null;
+  }
+
+  /**
+   * Get missing body parts for a stack's top cards
+   */
+  private getMissingBodyParts(topCards: { head?: Card; torso?: Card; legs?: Card }): BodyPart[] {
+    const missing: BodyPart[] = [];
+    if (!topCards.head) missing.push(BodyPart.Head);
+    if (!topCards.torso) missing.push(BodyPart.Torso);
+    if (!topCards.legs) missing.push(BodyPart.Legs);
+    return missing;
   }
 
   /**
