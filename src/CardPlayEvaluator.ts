@@ -17,7 +17,7 @@ export interface WildCardPlayOption {
   card: Card;
   placement: PlayCardOptions;
   nomination: NominationOption;
-  value: number; // Combined placement + nomination value (for sorting compatibility)
+  value: number; // Combined placement + nomination value for sorting
   combinedValue: number; // placement strategic value + nomination strategic value
   placementValue: number;
   nominationValue: number;
@@ -85,7 +85,7 @@ export class CardPlayEvaluator {
             card: wildCard,
             placement: placement.placement,
             nomination,
-            value: combinedValue, // For sorting compatibility
+            value: combinedValue, // For sorting
             combinedValue,
             placementValue: placement.value,
             nominationValue: nomination.value,

@@ -4,18 +4,12 @@ import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
 import { CardPlayEvaluator, CardPlayEvaluation, isWildCardPlayOption } from './CardPlayEvaluator.js';
-// Legacy imports for backward compatibility during transition
-import { CardSelector, CardEvaluation } from './CardSelector.js';
-import { WildCardNominator, NominationOption } from './WildCardNominator.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
   private analyzer: GameStateAnalyzer;
   private cardPlayEvaluator: CardPlayEvaluator;
-  // Legacy components for backward compatibility during transition
-  private cardSelector: CardSelector;
-  private wildCardNominator: WildCardNominator;
 
   constructor(
     private readonly player: Player,
@@ -23,9 +17,6 @@ export class AIPlayer {
   ) {
     this.analyzer = new GameStateAnalyzer();
     this.cardPlayEvaluator = new CardPlayEvaluator();
-    // Legacy components for backward compatibility
-    this.cardSelector = new CardSelector();
-    this.wildCardNominator = new WildCardNominator();
   }
 
   /**
@@ -157,7 +148,7 @@ export class AIPlayer {
   }
 
   /**
-   * Get detailed play evaluations for debugging (unified system)
+   * Get detailed play evaluations for debugging
    */
   getPlayEvaluations(): CardPlayEvaluation[] {
     const hand = this.player.getHand();
@@ -167,19 +158,6 @@ export class AIPlayer {
     const opponentStacks = this.player.getOpponentStacks();
     
     return this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
-  }
-
-  /**
-   * Get detailed move evaluation for debugging (legacy compatibility)
-   */
-  getMoveEvaluations(): CardEvaluation[] {
-    const hand = this.player.getHand();
-    const cards = hand.getCards();
-    const analysis = this.getGameAnalysis();
-    const myStacks = this.player.getMyStacks();
-    const opponentStacks = this.player.getOpponentStacks();
-    
-    return this.cardSelector.evaluateAllMoves(cards, analysis, myStacks, opponentStacks);
   }
 
 
@@ -215,42 +193,10 @@ export class AIPlayer {
   }
 
   /**
-   * Handle NOMINATE_WILD state - this should not be reached with unified system
+   * Handle NOMINATE_WILD state - should not be reached with unified system
    */
   private handleNominateWild(): void {
-    console.warn('AI: Unexpected NOMINATE_WILD state - wild cards should be handled in PLAY_CARD phase with unified system');
-    
-    // Fallback to legacy system for safety (should not be needed)
-    const hand = this.player.getHand();
-    const analysis = this.getGameAnalysis();
-    
-    // Find the last played wild card (if any)
-    const myStacks = this.player.getMyStacks();
-    const allCards = myStacks.flatMap(stack => {
-      const topCards = stack.getTopCards();
-      return [topCards.head, topCards.torso, topCards.legs].filter(Boolean) as Card[];
-    });
-    
-    const wildCard = allCards.find(card => card.isWild() && !card.getNomination());
-    if (wildCard) {
-      // Use fallback nomination logic
-      const nominations = this.wildCardNominator.evaluateNominations(
-        wildCard, 
-        null, 
-        analysis, 
-        hand, 
-        myStacks,
-        BodyPart.Head // Default fallback
-      );
-      
-      const bestNomination = this.wildCardNominator.selectBestNomination(nominations);
-      
-      console.log(`AI: Fallback nominating wild card as ${bestNomination.character} ${bestNomination.bodyPart}`);
-      this.player.nominateWildCard(wildCard, {
-        character: bestNomination.character,
-        bodyPart: bestNomination.bodyPart
-      });
-    }
+    console.error('AI: NOMINATE_WILD state reached - this indicates an implementation error. Wild cards should be handled in PLAY_CARD phase with unified system.');
   }
 
   /**
@@ -266,30 +212,6 @@ export class AIPlayer {
     } else {
       console.warn('AI: No strategic moves found');
     }
-  }
-
-  /**
-   * Find the stack where a wild card was played
-   */
-  private findStackWithWildCard(wildCard: Card, stacks: Stack[]): Stack | null {
-    // Look for the wild card in each stack's top cards
-    for (const stack of stacks) {
-      const topCards = stack.getTopCards();
-      const allCards = [topCards.head, topCards.torso, topCards.legs].filter(Boolean) as Card[];
-      
-      if (allCards.find(card => card.id === wildCard.id)) {
-        return stack;
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Get detailed nomination evaluations for debugging (legacy - should not be needed with unified system)
-   */
-  getNominationEvaluations(): NominationOption[] {
-    console.warn('AI: getNominationEvaluations called - wild card nominations should be handled in unified play evaluation');
-    return [];
   }
 
   /**
