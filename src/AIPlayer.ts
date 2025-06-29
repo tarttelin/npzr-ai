@@ -3,15 +3,17 @@ import { PlayerStateType } from './PlayerState.js';
 import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
+import { CardPlayEvaluator, CardPlayEvaluation, isWildCardPlayOption } from './CardPlayEvaluator.js';
+// Legacy imports for backward compatibility during transition
 import { CardSelector, CardEvaluation } from './CardSelector.js';
 import { WildCardNominator, NominationOption } from './WildCardNominator.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
-  private lastPlayedCard: Card | null = null;
-  private lastPlayedPosition: BodyPart | null = null;
   private analyzer: GameStateAnalyzer;
+  private cardPlayEvaluator: CardPlayEvaluator;
+  // Legacy components for backward compatibility during transition
   private cardSelector: CardSelector;
   private wildCardNominator: WildCardNominator;
 
@@ -20,6 +22,8 @@ export class AIPlayer {
     private readonly difficulty: Difficulty
   ) {
     this.analyzer = new GameStateAnalyzer();
+    this.cardPlayEvaluator = new CardPlayEvaluator();
+    // Legacy components for backward compatibility
     this.cardSelector = new CardSelector();
     this.wildCardNominator = new WildCardNominator();
   }
@@ -108,7 +112,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle PLAY_CARD state - intelligently place card using enhanced card selector
+   * Handle PLAY_CARD state - intelligently select and play card using unified evaluation
    */
   private handlePlayCard(): void {
     const hand = this.player.getHand();
@@ -123,24 +127,50 @@ export class AIPlayer {
     const myStacks = this.player.getMyStacks();
     const opponentStacks = this.player.getOpponentStacks();
     
-    // Use CardSelector to evaluate all possible moves
-    const evaluations = this.cardSelector.evaluateAllMoves(cards, analysis, myStacks, opponentStacks);
-    const bestMove = this.cardSelector.selectBestMove(evaluations);
+    // Use unified CardPlayEvaluator for optimal placement+nomination coordination
+    const evaluations = this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
+    const bestPlay = this.cardPlayEvaluator.selectBestPlay(evaluations);
     
-    if (!bestMove) {
-      console.warn('AI: No valid moves found');
+    if (!bestPlay) {
+      console.warn('AI: No valid plays found');
       return;
     }
     
-    this.lastPlayedCard = bestMove.card;
-    this.lastPlayedPosition = bestMove.placement.targetPile || null;
-    
-    console.log(`AI: Playing ${bestMove.card.toString()} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
-    this.player.playCard(bestMove.card, bestMove.placement);
+    // Execute the play
+    if (isWildCardPlayOption(bestPlay)) {
+      // Wild card: execute placement + nomination in one coordinated decision
+      console.log(`AI: Playing wild card ${bestPlay.card.toString()} to ${bestPlay.placement.targetPile} as ${bestPlay.nomination.character} ${bestPlay.nomination.bodyPart} - ${bestPlay.reasoning} (combined value: ${bestPlay.combinedValue})`);
+      
+      // Play the card
+      this.player.playCard(bestPlay.card, bestPlay.placement);
+      
+      // Immediately nominate (no separate decision phase needed)
+      this.player.nominateWildCard(bestPlay.card, {
+        character: bestPlay.nomination.character,
+        bodyPart: bestPlay.nomination.bodyPart
+      });
+    } else {
+      // Regular card: just place it
+      console.log(`AI: Playing ${bestPlay.card.toString()} - ${bestPlay.reasoning} (value: ${bestPlay.value}, type: ${bestPlay.type})`);
+      this.player.playCard(bestPlay.card, bestPlay.placement);
+    }
   }
 
   /**
-   * Get detailed move evaluation for debugging
+   * Get detailed play evaluations for debugging (unified system)
+   */
+  getPlayEvaluations(): CardPlayEvaluation[] {
+    const hand = this.player.getHand();
+    const cards = hand.getCards();
+    const analysis = this.getGameAnalysis();
+    const myStacks = this.player.getMyStacks();
+    const opponentStacks = this.player.getOpponentStacks();
+    
+    return this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
+  }
+
+  /**
+   * Get detailed move evaluation for debugging (legacy compatibility)
    */
   getMoveEvaluations(): CardEvaluation[] {
     const hand = this.player.getHand();
@@ -185,43 +215,42 @@ export class AIPlayer {
   }
 
   /**
-   * Handle NOMINATE_WILD state - intelligently nominate wild cards using advanced strategy
+   * Handle NOMINATE_WILD state - this should not be reached with unified system
    */
   private handleNominateWild(): void {
-    if (!this.lastPlayedCard || !this.lastPlayedCard.isWild()) {
-      console.warn('AI: Expected to nominate wild card but no wild card found');
-      return;
-    }
-
-    if (!this.lastPlayedPosition) {
-      console.warn('AI: No position recorded for wild card placement');
-      return;
-    }
-
-    const analysis = this.getGameAnalysis();
+    console.warn('AI: Unexpected NOMINATE_WILD state - wild cards should be handled in PLAY_CARD phase with unified system');
+    
+    // Fallback to legacy system for safety (should not be needed)
     const hand = this.player.getHand();
+    const analysis = this.getGameAnalysis();
+    
+    // Find the last played wild card (if any)
     const myStacks = this.player.getMyStacks();
-    
-    // Find the stack where the wild card was played (if any)
-    const targetStack = this.findStackWithWildCard(this.lastPlayedCard, myStacks);
-    
-    // Evaluate nomination options constrained by played position
-    const nominations = this.wildCardNominator.evaluateNominations(
-      this.lastPlayedCard, 
-      targetStack, 
-      analysis, 
-      hand, 
-      myStacks,
-      this.lastPlayedPosition  // Pass the position constraint
-    );
-    
-    const bestNomination = this.wildCardNominator.selectBestNomination(nominations);
-
-    console.log(`AI: Nominating wild card as ${bestNomination.character} ${bestNomination.bodyPart} - ${bestNomination.reasoning} (value: ${bestNomination.value})`);
-    this.player.nominateWildCard(this.lastPlayedCard, {
-      character: bestNomination.character,
-      bodyPart: bestNomination.bodyPart
+    const allCards = myStacks.flatMap(stack => {
+      const topCards = stack.getTopCards();
+      return [topCards.head, topCards.torso, topCards.legs].filter(Boolean) as Card[];
     });
+    
+    const wildCard = allCards.find(card => card.isWild() && !card.getNomination());
+    if (wildCard) {
+      // Use fallback nomination logic
+      const nominations = this.wildCardNominator.evaluateNominations(
+        wildCard, 
+        null, 
+        analysis, 
+        hand, 
+        myStacks,
+        BodyPart.Head // Default fallback
+      );
+      
+      const bestNomination = this.wildCardNominator.selectBestNomination(nominations);
+      
+      console.log(`AI: Fallback nominating wild card as ${bestNomination.character} ${bestNomination.bodyPart}`);
+      this.player.nominateWildCard(wildCard, {
+        character: bestNomination.character,
+        bodyPart: bestNomination.bodyPart
+      });
+    }
   }
 
   /**
@@ -256,26 +285,11 @@ export class AIPlayer {
   }
 
   /**
-   * Get detailed nomination evaluations for debugging
+   * Get detailed nomination evaluations for debugging (legacy - should not be needed with unified system)
    */
   getNominationEvaluations(): NominationOption[] {
-    if (!this.lastPlayedCard || !this.lastPlayedCard.isWild() || !this.lastPlayedPosition) {
-      return [];
-    }
-
-    const analysis = this.getGameAnalysis();
-    const hand = this.player.getHand();
-    const myStacks = this.player.getMyStacks();
-    const targetStack = this.findStackWithWildCard(this.lastPlayedCard, myStacks);
-    
-    return this.wildCardNominator.evaluateNominations(
-      this.lastPlayedCard, 
-      targetStack, 
-      analysis, 
-      hand, 
-      myStacks,
-      this.lastPlayedPosition
-    );
+    console.warn('AI: getNominationEvaluations called - wild card nominations should be handled in unified play evaluation');
+    return [];
   }
 
   /**
