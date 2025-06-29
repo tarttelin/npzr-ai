@@ -4,6 +4,7 @@ import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
 import { CardSelector, CardEvaluation } from './CardSelector.js';
+import { WildCardNominator, NominationOption } from './WildCardNominator.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -11,6 +12,7 @@ export class AIPlayer {
   private lastPlayedCard: Card | null = null;
   private analyzer: GameStateAnalyzer;
   private cardSelector: CardSelector;
+  private wildCardNominator: WildCardNominator;
 
   constructor(
     private readonly player: Player,
@@ -18,6 +20,7 @@ export class AIPlayer {
   ) {
     this.analyzer = new GameStateAnalyzer();
     this.cardSelector = new CardSelector();
+    this.wildCardNominator = new WildCardNominator();
   }
 
   /**
@@ -180,7 +183,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle NOMINATE_WILD state - intelligently nominate wild cards
+   * Handle NOMINATE_WILD state - intelligently nominate wild cards using advanced strategy
    */
   private handleNominateWild(): void {
     if (!this.lastPlayedCard || !this.lastPlayedCard.isWild()) {
@@ -189,10 +192,28 @@ export class AIPlayer {
     }
 
     const analysis = this.getGameAnalysis();
-    const nomination = this.selectBestWildNomination(this.lastPlayedCard, analysis);
+    const hand = this.player.getHand();
+    const myStacks = this.player.getMyStacks();
+    
+    // Find the stack where the wild card was played (if any)
+    const targetStack = this.findStackWithWildCard(this.lastPlayedCard, myStacks);
+    
+    // Evaluate all nomination options
+    const nominations = this.wildCardNominator.evaluateNominations(
+      this.lastPlayedCard, 
+      targetStack, 
+      analysis, 
+      hand, 
+      myStacks
+    );
+    
+    const bestNomination = this.wildCardNominator.selectBestNomination(nominations);
 
-    console.log(`AI: Nominating wild card as ${nomination.character} ${nomination.bodyPart} (strategic choice)`);
-    this.player.nominateWildCard(this.lastPlayedCard, nomination);
+    console.log(`AI: Nominating wild card as ${bestNomination.character} ${bestNomination.bodyPart} - ${bestNomination.reasoning} (value: ${bestNomination.value})`);
+    this.player.nominateWildCard(this.lastPlayedCard, {
+      character: bestNomination.character,
+      bodyPart: bestNomination.bodyPart
+    });
   }
 
   /**
@@ -211,49 +232,41 @@ export class AIPlayer {
   }
 
   /**
-   * Select the best wild card nomination based on strategic analysis
+   * Find the stack where a wild card was played
    */
-  private selectBestWildNomination(wildCard: Card, analysis: GameAnalysis): { character: Character; bodyPart: BodyPart } {
-    // Priority 1: Nominate to complete own stacks
-    for (const opportunity of analysis.completionOpportunities) {
-      return {
-        character: opportunity.character,
-        bodyPart: opportunity.neededCard
-      };
-    }
-
-    // Priority 2: Nominate to block critical opponent threats
-    for (const block of analysis.blockingOpportunities) {
-      if (block.urgency === 'critical') {
-        return {
-          character: block.character,
-          bodyPart: block.targetPile
-        };
-      }
-    }
-
-    // Priority 3: Nominate based on existing own stacks (continuation)
-    const myStacks = this.player.getMyStacks();
-    for (const stack of myStacks) {
+  private findStackWithWildCard(wildCard: Card, stacks: Stack[]): Stack | null {
+    // Look for the wild card in each stack's top cards
+    for (const stack of stacks) {
       const topCards = stack.getTopCards();
-      const character = this.getStackCharacter(topCards);
-      if (character && character !== Character.Wild) {
-        // Find missing body part for this character
-        const missingParts = this.getMissingBodyParts(topCards);
-        if (missingParts.length > 0) {
-          return {
-            character: character,
-            bodyPart: missingParts[0] // Take first missing part
-          };
-        }
+      const allCards = [topCards.head, topCards.torso, topCards.legs].filter(Boolean) as Card[];
+      
+      if (allCards.find(card => card.id === wildCard.id)) {
+        return stack;
       }
     }
+    return null;
+  }
 
-    // Fallback: High-value character and head (most common need)
-    return {
-      character: Character.Ninja,
-      bodyPart: BodyPart.Head
-    };
+  /**
+   * Get detailed nomination evaluations for debugging
+   */
+  getNominationEvaluations(): NominationOption[] {
+    if (!this.lastPlayedCard || !this.lastPlayedCard.isWild()) {
+      return [];
+    }
+
+    const analysis = this.getGameAnalysis();
+    const hand = this.player.getHand();
+    const myStacks = this.player.getMyStacks();
+    const targetStack = this.findStackWithWildCard(this.lastPlayedCard, myStacks);
+    
+    return this.wildCardNominator.evaluateNominations(
+      this.lastPlayedCard, 
+      targetStack, 
+      analysis, 
+      hand, 
+      myStacks
+    );
   }
 
   /**
