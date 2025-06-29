@@ -3,7 +3,15 @@ import { PlayCardOptions } from './Player.js';
 import { GameAnalysis, StackProgress } from './GameStateAnalyzer.js';
 import { Stack } from './Stack.js';
 import { Hand } from './Hand.js';
-import { NominationOption } from './WildCardNominator.js';
+
+export interface NominationOption {
+  character: Character;
+  bodyPart: BodyPart;
+  value: number;
+  reasoning: string;
+  completesStack: boolean;
+  enablesFutureCompletion: boolean;
+}
 
 export interface RegularCardEvaluation {
   card: Card;
@@ -296,7 +304,7 @@ export class CardPlayEvaluator {
   }
 
   // ========================================
-  // Helper methods (preserved from CardSelector and WildCardNominator)
+  // Helper methods for card evaluation
   // ========================================
 
   private findCompletionMoves(hand: Card[], ownStacks: Stack[], gameAnalysis: GameAnalysis): RegularCardEvaluation[] {
