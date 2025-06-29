@@ -1,9 +1,9 @@
 import { Player, MoveOptions } from './Player.js';
 import { PlayerStateType } from './PlayerState.js';
-import { Card, Character, BodyPart } from './Card.js';
+import { Card, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
-import { CardPlayEvaluator, CardPlayEvaluation, isWildCardPlayOption } from './CardPlayEvaluator.js';
+import { CardPlayEvaluator, isWildCardPlayOption } from './CardPlayEvaluator.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -147,50 +147,6 @@ export class AIPlayer {
     }
   }
 
-  /**
-   * Get detailed play evaluations for debugging
-   */
-  getPlayEvaluations(): CardPlayEvaluation[] {
-    const hand = this.player.getHand();
-    const cards = hand.getCards();
-    const analysis = this.getGameAnalysis();
-    const myStacks = this.player.getMyStacks();
-    const opponentStacks = this.player.getOpponentStacks();
-    
-    return this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
-  }
-
-
-  /**
-   * Determine the character type of a stack based on its top cards
-   */
-  private getStackCharacter(topCards: { head?: Card; torso?: Card; legs?: Card }): Character | null {
-    // Check head card first
-    if (topCards.head) {
-      const effectiveChar = topCards.head.getEffectiveCharacter();
-      if (effectiveChar !== Character.Wild) {
-        return effectiveChar;
-      }
-    }
-    
-    // Check torso card
-    if (topCards.torso) {
-      const effectiveChar = topCards.torso.getEffectiveCharacter();
-      if (effectiveChar !== Character.Wild) {
-        return effectiveChar;
-      }
-    }
-    
-    // Check legs card
-    if (topCards.legs) {
-      const effectiveChar = topCards.legs.getEffectiveCharacter();
-      if (effectiveChar !== Character.Wild) {
-        return effectiveChar;
-      }
-    }
-
-    return null; // No clear character type
-  }
 
   /**
    * Handle NOMINATE_WILD state - should not be reached with unified system
