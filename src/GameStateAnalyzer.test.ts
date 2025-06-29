@@ -1,4 +1,4 @@
-import { GameStateAnalyzer, CompletionOpportunity, BlockingOpportunity } from './GameStateAnalyzer.js';
+import { GameStateAnalyzer, CompletionOpportunity, DisruptionOpportunity } from './GameStateAnalyzer.js';
 import { GameEngine } from './GameEngine.js';
 import { Player } from './Player.js';
 import { Card, Character, BodyPart } from './Card.js';
@@ -395,26 +395,34 @@ describe('GameStateAnalyzer', () => {
   });
 
   describe('findBlockingOpportunities', () => {
-    test('should find critical blocking opportunities', () => {
+    test('should find critical blocking opportunities by disrupting existing pieces', () => {
       const stack = new Stack('stack1', 'opponent');
       stack.addCard(new Card('card1', Character.Ninja, BodyPart.Head), BodyPart.Head);
       stack.addCard(new Card('card2', Character.Ninja, BodyPart.Torso), BodyPart.Torso);
 
       const hand = [
-        new Card('card3', Character.Ninja, BodyPart.Legs),
-        new Card('card4', Character.Pirate, BodyPart.Head)
+        new Card('card3', Character.Pirate, BodyPart.Head), // Can disrupt ninja head
+        new Card('card4', Character.Zombie, BodyPart.Torso)  // Can disrupt ninja torso
       ];
 
       const emptyScore = new Score();
-      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
+      const result = analyzer.findDisruptionOpportunities(hand, [stack], emptyScore);
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        character: Character.Ninja,
-        stackId: 'stack1',
-        targetPile: BodyPart.Legs,
-        urgency: 'critical'
-      });
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(expect.arrayContaining([
+        {
+          character: Character.Ninja,
+          stackId: 'stack1',
+          targetPile: BodyPart.Head,
+          urgency: 'critical'
+        },
+        {
+          character: Character.Ninja,
+          stackId: 'stack1',
+          targetPile: BodyPart.Torso,
+          urgency: 'critical'
+        }
+      ]));
     });
 
     test('should find blocking opportunities with wild cards', () => {
@@ -423,14 +431,28 @@ describe('GameStateAnalyzer', () => {
       stack.addCard(new Card('card2', Character.Pirate, BodyPart.Torso), BodyPart.Torso);
 
       const hand = [
-        new Card('card3', Character.Wild, BodyPart.Legs)
+        new Card('card3', Character.Wild, BodyPart.Head)  // Can disrupt pirate head only
       ];
 
       const emptyScore = new Score();
-      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
+      const result = analyzer.findDisruptionOpportunities(hand, [stack], emptyScore);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].urgency).toBe('critical');
+      // Wild card can disrupt both head and torso since it's universal
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(expect.arrayContaining([
+        {
+          character: Character.Pirate,
+          stackId: 'stack1',
+          targetPile: BodyPart.Head,
+          urgency: 'critical'
+        },
+        {
+          character: Character.Pirate,
+          stackId: 'stack1',
+          targetPile: BodyPart.Torso,
+          urgency: 'critical'
+        }
+      ]));
     });
 
     test('should return empty array when no blocking opportunities exist', () => {
@@ -438,11 +460,11 @@ describe('GameStateAnalyzer', () => {
       stack.addCard(new Card('card1', Character.Ninja, BodyPart.Head), BodyPart.Head);
 
       const hand = [
-        new Card('card2', Character.Pirate, BodyPart.Head)
+        new Card('card2', Character.Pirate, BodyPart.Torso)  // Can't disrupt ninja head with pirate torso
       ];
 
       const emptyScore = new Score();
-      const result = analyzer.findBlockingOpportunities(hand, [stack], emptyScore);
+      const result = analyzer.findDisruptionOpportunities(hand, [stack], emptyScore);
       expect(result).toHaveLength(0);
     });
   });
@@ -479,7 +501,7 @@ describe('GameStateAnalyzer', () => {
       expect(result.gamePhase).toBe('early');
       expect(result.threatLevel).toBe('low');
       expect(result.completionOpportunities).toHaveLength(1);
-      expect(result.blockingOpportunities).toHaveLength(0);
+      expect(result.disruptionOpportunities).toHaveLength(1); // Wild card can disrupt opponent's pirate head
     });
   });
 
@@ -503,7 +525,7 @@ describe('GameStateAnalyzer', () => {
         gamePhase: 'mid' as const,
         threatLevel: 'medium' as const,
         completionOpportunities: [{} as CompletionOpportunity, {} as CompletionOpportunity],
-        blockingOpportunities: []
+        disruptionOpportunities: []
       };
 
       const result = analyzer.getAnalysisSummary(analysis);

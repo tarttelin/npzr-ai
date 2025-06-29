@@ -25,7 +25,7 @@ export interface CompletionOpportunity {
   priority: 'high' | 'medium' | 'low';
 }
 
-export interface BlockingOpportunity {
+export interface DisruptionOpportunity {
   character: Character;
   stackId: string;
   targetPile: BodyPart;
@@ -40,7 +40,7 @@ export interface GameAnalysis {
   gamePhase: 'early' | 'mid' | 'late';
   threatLevel: 'low' | 'medium' | 'high';
   completionOpportunities: CompletionOpportunity[];
-  blockingOpportunities: BlockingOpportunity[];
+  disruptionOpportunities: DisruptionOpportunity[];
 }
 
 export type ThreatLevel = 'low' | 'medium' | 'high';
@@ -213,10 +213,10 @@ export class GameStateAnalyzer {
   }
 
   /**
-   * Find opportunities to block opponent completions
+   * Find opportunities to disrupt opponent progress by placing different characters on their existing pieces
    */
-  findBlockingOpportunities(hand: Card[], opponentStacks: Stack[], opponentScore: Score): BlockingOpportunity[] {
-    const opportunities: BlockingOpportunity[] = [];
+  findDisruptionOpportunities(hand: Card[], opponentStacks: Stack[], opponentScore: Score): DisruptionOpportunity[] {
+    const opportunities: DisruptionOpportunity[] = [];
     const opponentProgress = this.analyzeStacks(opponentStacks, opponentScore);
 
     opponentStacks.forEach(stack => {
@@ -226,18 +226,21 @@ export class GameStateAnalyzer {
       if (character && character !== Character.Wild) {
         const progress = opponentProgress.get(character);
         
-        if (progress && !progress.isComplete && progress.completionLevel >= 2) {
-          // Opponent is close to completion, check if we can block
-          progress.missingPieces.forEach(missingPiece => {
-            const canBlock = hand.some(card => 
-              card.bodyPart === missingPiece || card.isWild()
+        if (progress && !progress.isComplete && progress.completionLevel >= 1) {
+          // Opponent has progress, check if we can disrupt existing pieces
+          const existingPieces = this.getExistingPieces(topCards, character);
+          
+          existingPieces.forEach(existingPiece => {
+            const canDisrupt = hand.some(card => 
+              (card.bodyPart === existingPiece && card.character !== character) || 
+              card.isWild()
             );
             
-            if (canBlock) {
+            if (canDisrupt) {
               opportunities.push({
                 character,
                 stackId: stack.getId(),
-                targetPile: missingPiece,
+                targetPile: existingPiece, // Target existing piece to disrupt
                 urgency: progress.completionLevel === 2 ? 'critical' : 'important'
               });
             }
@@ -277,7 +280,7 @@ export class GameStateAnalyzer {
       ownScore
     );
     
-    const blockingOpportunities = this.findBlockingOpportunities(
+    const disruptionOpportunities = this.findDisruptionOpportunities(
       ownHand.getCards(), 
       opponentStacks,
       opponentScore
@@ -291,8 +294,30 @@ export class GameStateAnalyzer {
       gamePhase,
       threatLevel,
       completionOpportunities,
-      blockingOpportunities
+      disruptionOpportunities
     };
+  }
+
+  /**
+   * Get existing pieces for a specific character in a stack (for disruption targeting)
+   */
+  private getExistingPieces(topCards: { head?: Card; torso?: Card; legs?: Card }, targetCharacter: Character): BodyPart[] {
+    const existingPieces: BodyPart[] = [];
+    
+    // Check each position to see if it contains the target character
+    if (topCards.head && topCards.head.getEffectiveCharacter() === targetCharacter) {
+      existingPieces.push(BodyPart.Head);
+    }
+    
+    if (topCards.torso && topCards.torso.getEffectiveCharacter() === targetCharacter) {
+      existingPieces.push(BodyPart.Torso);
+    }
+    
+    if (topCards.legs && topCards.legs.getEffectiveCharacter() === targetCharacter) {
+      existingPieces.push(BodyPart.Legs);
+    }
+    
+    return existingPieces;
   }
 
   /**

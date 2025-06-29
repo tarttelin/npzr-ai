@@ -3,21 +3,20 @@ import { PlayerStateType } from './PlayerState.js';
 import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
-import { CardSelector, CardEvaluation } from './CardSelector.js';
+import { CardPlayEvaluator, CardPlayEvaluation, isWildCardPlayOption } from './CardPlayEvaluator.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
-  private lastPlayedCard: Card | null = null;
   private analyzer: GameStateAnalyzer;
-  private cardSelector: CardSelector;
+  private cardPlayEvaluator: CardPlayEvaluator;
 
   constructor(
     private readonly player: Player,
     private readonly difficulty: Difficulty
   ) {
     this.analyzer = new GameStateAnalyzer();
-    this.cardSelector = new CardSelector();
+    this.cardPlayEvaluator = new CardPlayEvaluator();
   }
 
   /**
@@ -104,7 +103,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle PLAY_CARD state - intelligently place card using enhanced card selector
+   * Handle PLAY_CARD state - intelligently select and play card using unified evaluation
    */
   private handlePlayCard(): void {
     const hand = this.player.getHand();
@@ -119,32 +118,46 @@ export class AIPlayer {
     const myStacks = this.player.getMyStacks();
     const opponentStacks = this.player.getOpponentStacks();
     
-    // Use CardSelector to evaluate all possible moves
-    const evaluations = this.cardSelector.evaluateAllMoves(cards, analysis, myStacks, opponentStacks);
-    const bestMove = this.cardSelector.selectBestMove(evaluations);
+    // Use unified CardPlayEvaluator for optimal placement+nomination coordination
+    const evaluations = this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
+    const bestPlay = this.cardPlayEvaluator.selectBestPlay(evaluations);
     
-    if (!bestMove) {
-      console.warn('AI: No valid moves found');
+    if (!bestPlay) {
+      console.warn('AI: No valid plays found');
       return;
     }
     
-    this.lastPlayedCard = bestMove.card;
-    
-    console.log(`AI: Playing ${bestMove.card.toString()} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
-    this.player.playCard(bestMove.card, bestMove.placement);
+    // Execute the play
+    if (isWildCardPlayOption(bestPlay)) {
+      // Wild card: execute placement + nomination in one coordinated decision
+      console.log(`AI: Playing wild card ${bestPlay.card.toString()} to ${bestPlay.placement.targetPile} as ${bestPlay.nomination.character} ${bestPlay.nomination.bodyPart} - ${bestPlay.reasoning} (combined value: ${bestPlay.combinedValue})`);
+      
+      // Play the card
+      this.player.playCard(bestPlay.card, bestPlay.placement);
+      
+      // Immediately nominate (no separate decision phase needed)
+      this.player.nominateWildCard(bestPlay.card, {
+        character: bestPlay.nomination.character,
+        bodyPart: bestPlay.nomination.bodyPart
+      });
+    } else {
+      // Regular card: just place it
+      console.log(`AI: Playing ${bestPlay.card.toString()} - ${bestPlay.reasoning} (value: ${bestPlay.value}, type: ${bestPlay.type})`);
+      this.player.playCard(bestPlay.card, bestPlay.placement);
+    }
   }
 
   /**
-   * Get detailed move evaluation for debugging
+   * Get detailed play evaluations for debugging
    */
-  getMoveEvaluations(): CardEvaluation[] {
+  getPlayEvaluations(): CardPlayEvaluation[] {
     const hand = this.player.getHand();
     const cards = hand.getCards();
     const analysis = this.getGameAnalysis();
     const myStacks = this.player.getMyStacks();
     const opponentStacks = this.player.getOpponentStacks();
     
-    return this.cardSelector.evaluateAllMoves(cards, analysis, myStacks, opponentStacks);
+    return this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
   }
 
 
@@ -180,19 +193,10 @@ export class AIPlayer {
   }
 
   /**
-   * Handle NOMINATE_WILD state - intelligently nominate wild cards
+   * Handle NOMINATE_WILD state - should not be reached with unified system
    */
   private handleNominateWild(): void {
-    if (!this.lastPlayedCard || !this.lastPlayedCard.isWild()) {
-      console.warn('AI: Expected to nominate wild card but no wild card found');
-      return;
-    }
-
-    const analysis = this.getGameAnalysis();
-    const nomination = this.selectBestWildNomination(this.lastPlayedCard, analysis);
-
-    console.log(`AI: Nominating wild card as ${nomination.character} ${nomination.bodyPart} (strategic choice)`);
-    this.player.nominateWildCard(this.lastPlayedCard, nomination);
+    console.error('AI: NOMINATE_WILD state reached - this indicates an implementation error. Wild cards should be handled in PLAY_CARD phase with unified system.');
   }
 
   /**
@@ -211,52 +215,6 @@ export class AIPlayer {
   }
 
   /**
-   * Select the best wild card nomination based on strategic analysis
-   */
-  private selectBestWildNomination(wildCard: Card, analysis: GameAnalysis): { character: Character; bodyPart: BodyPart } {
-    // Priority 1: Nominate to complete own stacks
-    for (const opportunity of analysis.completionOpportunities) {
-      return {
-        character: opportunity.character,
-        bodyPart: opportunity.neededCard
-      };
-    }
-
-    // Priority 2: Nominate to block critical opponent threats
-    for (const block of analysis.blockingOpportunities) {
-      if (block.urgency === 'critical') {
-        return {
-          character: block.character,
-          bodyPart: block.targetPile
-        };
-      }
-    }
-
-    // Priority 3: Nominate based on existing own stacks (continuation)
-    const myStacks = this.player.getMyStacks();
-    for (const stack of myStacks) {
-      const topCards = stack.getTopCards();
-      const character = this.getStackCharacter(topCards);
-      if (character && character !== Character.Wild) {
-        // Find missing body part for this character
-        const missingParts = this.getMissingBodyParts(topCards);
-        if (missingParts.length > 0) {
-          return {
-            character: character,
-            bodyPart: missingParts[0] // Take first missing part
-          };
-        }
-      }
-    }
-
-    // Fallback: High-value character and head (most common need)
-    return {
-      character: Character.Ninja,
-      bodyPart: BodyPart.Head
-    };
-  }
-
-  /**
    * Select the best strategic move from available options
    */
   private selectBestMove(analysis: GameAnalysis): MoveOptions | null {
@@ -270,10 +228,10 @@ export class AIPlayer {
       if (move) return move;
     }
 
-    // Priority 2: Moves that block critical opponent completions
-    for (const block of analysis.blockingOpportunities) {
-      if (block.urgency === 'critical') {
-        const move = this.findMoveForBlocking(block, allStacks);
+    // Priority 2: Moves that disrupt critical opponent completions
+    for (const disruption of analysis.disruptionOpportunities) {
+      if (disruption.urgency === 'critical') {
+        const move = this.findMoveForDisruption(disruption, allStacks);
         if (move) return move;
       }
     }
@@ -309,22 +267,22 @@ export class AIPlayer {
   }
 
   /**
-   * Find a move that can block opponent completion
+   * Find a move that can disrupt opponent completion
    */
-  private findMoveForBlocking(block: any, allStacks: Stack[]): MoveOptions | null {
-    // Look for cards that can be moved to block the opponent
+  private findMoveForDisruption(disruption: any, allStacks: Stack[]): MoveOptions | null {
+    // Look for cards that can be moved to disrupt the opponent
     for (const fromStack of allStacks) {
-      const cards = fromStack.getCardsFromPile(block.targetPile);
+      const cards = fromStack.getCardsFromPile(disruption.targetPile);
       if (cards.length > 0) {
         const card = cards[cards.length - 1]; // Top card
-        const targetStack = allStacks.find(s => s.getId() === block.stackId);
-        if (targetStack && targetStack.canAcceptCard(card, block.targetPile)) {
+        const targetStack = allStacks.find(s => s.getId() === disruption.stackId);
+        if (targetStack && targetStack.canAcceptCard(card, disruption.targetPile)) {
           return {
             cardId: card.id,
             fromStackId: fromStack.getId(),
-            fromPile: block.targetPile,
-            toStackId: block.stackId,
-            toPile: block.targetPile
+            fromPile: disruption.targetPile,
+            toStackId: disruption.stackId,
+            toPile: disruption.targetPile
           };
         }
       }
