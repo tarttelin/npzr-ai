@@ -10,6 +10,7 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
   private lastPlayedCard: Card | null = null;
+  private lastPlayedPosition: BodyPart | null = null;
   private analyzer: GameStateAnalyzer;
   private cardSelector: CardSelector;
   private wildCardNominator: WildCardNominator;
@@ -132,6 +133,7 @@ export class AIPlayer {
     }
     
     this.lastPlayedCard = bestMove.card;
+    this.lastPlayedPosition = bestMove.placement.targetPile || null;
     
     console.log(`AI: Playing ${bestMove.card.toString()} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
     this.player.playCard(bestMove.card, bestMove.placement);
@@ -191,6 +193,11 @@ export class AIPlayer {
       return;
     }
 
+    if (!this.lastPlayedPosition) {
+      console.warn('AI: No position recorded for wild card placement');
+      return;
+    }
+
     const analysis = this.getGameAnalysis();
     const hand = this.player.getHand();
     const myStacks = this.player.getMyStacks();
@@ -198,13 +205,14 @@ export class AIPlayer {
     // Find the stack where the wild card was played (if any)
     const targetStack = this.findStackWithWildCard(this.lastPlayedCard, myStacks);
     
-    // Evaluate all nomination options
+    // Evaluate nomination options constrained by played position
     const nominations = this.wildCardNominator.evaluateNominations(
       this.lastPlayedCard, 
       targetStack, 
       analysis, 
       hand, 
-      myStacks
+      myStacks,
+      this.lastPlayedPosition  // Pass the position constraint
     );
     
     const bestNomination = this.wildCardNominator.selectBestNomination(nominations);
@@ -251,7 +259,7 @@ export class AIPlayer {
    * Get detailed nomination evaluations for debugging
    */
   getNominationEvaluations(): NominationOption[] {
-    if (!this.lastPlayedCard || !this.lastPlayedCard.isWild()) {
+    if (!this.lastPlayedCard || !this.lastPlayedCard.isWild() || !this.lastPlayedPosition) {
       return [];
     }
 
@@ -265,7 +273,8 @@ export class AIPlayer {
       targetStack, 
       analysis, 
       hand, 
-      myStacks
+      myStacks,
+      this.lastPlayedPosition
     );
   }
 

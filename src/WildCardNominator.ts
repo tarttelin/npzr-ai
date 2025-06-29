@@ -16,14 +16,14 @@ export type WildCardType = 'character' | 'position' | 'universal';
 
 export class WildCardNominator {
   /**
-   * Evaluate all possible nominations for a wild card
+   * Evaluate all possible nominations for a wild card played in a specific position
    */
-  evaluateNominations(wildCard: Card, targetStack: Stack | null, gameAnalysis: GameAnalysis, hand: Hand, ownStacks: Stack[]): NominationOption[] {
+  evaluateNominations(wildCard: Card, targetStack: Stack | null, gameAnalysis: GameAnalysis, hand: Hand, ownStacks: Stack[], playedPosition: BodyPart): NominationOption[] {
     const options: NominationOption[] = [];
     const wildType = this.getWildCardType(wildCard);
     
-    // Get all valid nomination combinations based on wild card type
-    const validCombinations = this.getValidNominations(wildCard, wildType);
+    // Get all valid nomination combinations based on wild card type and played position
+    const validCombinations = this.getValidNominations(wildCard, wildType, playedPosition);
     
     for (const { character, bodyPart } of validCombinations) {
       const option = this.evaluateNominationOption(
@@ -74,9 +74,9 @@ export class WildCardNominator {
   }
 
   /**
-   * Find nominations that optimize for future building
+   * Find nominations that optimize for future building (with position constraint)
    */
-  optimizeForFutureBuilding(wildCard: Card, hand: Hand, stacks: Stack[]): NominationOption[] {
+  optimizeForFutureBuilding(wildCard: Card, hand: Hand, stacks: Stack[], playedPosition: BodyPart): NominationOption[] {
     const options: NominationOption[] = [];
     const handCards = hand.getCards();
     
@@ -90,21 +90,18 @@ export class WildCardNominator {
       }
     }
     
-    // Find nominations that align with hand composition
+    // Find nominations that align with hand composition (constrained by played position)
     for (const [character, count] of characterSupport.entries()) {
       if (count >= 2) { // Good future potential
-        const missingParts = this.findMissingPartsForCharacter(character, stacks);
-        
-        for (const bodyPart of missingParts) {
-          options.push({
-            character,
-            bodyPart,
-            value: 300 + (count * 50), // Base value + hand support bonus
-            reasoning: `Future building potential: ${count} ${character} cards in hand`,
-            completesStack: false,
-            enablesFutureCompletion: true
-          });
-        }
+        // Only consider this character if we can nominate it for the played position
+        options.push({
+          character,
+          bodyPart: playedPosition, // Must match played position
+          value: 300 + (count * 50), // Base value + hand support bonus
+          reasoning: `Future building potential: ${count} ${character} cards in hand`,
+          completesStack: false,
+          enablesFutureCompletion: true
+        });
       }
     }
     
@@ -199,12 +196,11 @@ export class WildCardNominator {
   }
 
   /**
-   * Get valid nomination combinations based on wild card type
+   * Get valid nomination combinations based on wild card type and played position constraint
    */
-  private getValidNominations(wildCard: Card, wildType: WildCardType): Array<{ character: Character; bodyPart: BodyPart }> {
+  private getValidNominations(wildCard: Card, wildType: WildCardType, playedPosition: BodyPart): Array<{ character: Character; bodyPart: BodyPart }> {
     const combinations: Array<{ character: Character; bodyPart: BodyPart }> = [];
     const characters = [Character.Ninja, Character.Pirate, Character.Zombie, Character.Robot];
-    const bodyParts = [BodyPart.Head, BodyPart.Torso, BodyPart.Legs];
 
     // If not actually a wild card, return empty array
     if (!wildCard.isWild()) {
@@ -213,29 +209,30 @@ export class WildCardNominator {
 
     switch (wildType) {
       case 'character': {
-        // Character is fixed, body part can be any
+        // Character is fixed, body part must match played position
         const fixedCharacter = wildCard.character;
-        for (const bodyPart of bodyParts) {
-          combinations.push({ character: fixedCharacter, bodyPart });
-        }
+        // Can only nominate the character for the position where it was played
+        combinations.push({ character: fixedCharacter, bodyPart: playedPosition });
         break;
       }
         
       case 'position': {
-        // Body part is fixed, character can be any
+        // Body part is fixed and must match played position
         const fixedBodyPart = wildCard.bodyPart;
-        for (const character of characters) {
-          combinations.push({ character, bodyPart: fixedBodyPart });
+        if (fixedBodyPart === playedPosition) {
+          // Position wild matches where it was played - valid for any character
+          for (const character of characters) {
+            combinations.push({ character, bodyPart: fixedBodyPart });
+          }
         }
+        // If position wild doesn't match played position, no valid nominations
         break;
       }
         
       case 'universal':
-        // Both character and body part can be any
+        // Body part must match played position, character can be any
         for (const character of characters) {
-          for (const bodyPart of bodyParts) {
-            combinations.push({ character, bodyPart });
-          }
+          combinations.push({ character, bodyPart: playedPosition });
         }
         break;
     }

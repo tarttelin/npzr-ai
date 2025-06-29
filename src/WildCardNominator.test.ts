@@ -40,30 +40,44 @@ describe('WildCardNominator', () => {
   });
 
   describe('Wild Card Type Detection', () => {
-    it('should identify character wild cards', () => {
+    it('should identify character wild cards with position constraint', () => {
       const ninjaWild = new Card('1', Character.Ninja, BodyPart.Wild);
-      const evaluations = nominator.evaluateNominations(ninjaWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Wild card played to head position
+      const evaluations = nominator.evaluateNominations(ninjaWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
-      // Character wilds should only allow nominations for that character
+      // Character wilds should only allow nominations for that character and played position
       expect(evaluations.every(opt => opt.character === Character.Ninja)).toBe(true);
-      expect(evaluations.length).toBe(3); // 3 body parts
+      expect(evaluations.every(opt => opt.bodyPart === BodyPart.Head)).toBe(true);
+      expect(evaluations.length).toBe(1); // Only 1 valid nomination (Ninja Head)
     });
 
-    it('should identify position wild cards', () => {
+    it('should identify position wild cards with position constraint', () => {
       const headWild = new Card('1', Character.Wild, BodyPart.Head);
-      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Position wild played to matching head position
+      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
-      // Position wilds should only allow nominations for that body part
+      // Position wilds should only allow nominations for that body part when played to matching position
       expect(evaluations.every(opt => opt.bodyPart === BodyPart.Head)).toBe(true);
       expect(evaluations.length).toBe(4); // 4 characters
     });
 
-    it('should identify universal wild cards', () => {
-      const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+    it('should reject position wild cards played to wrong position', () => {
+      const headWild = new Card('1', Character.Wild, BodyPart.Head);
+      const playedPosition = BodyPart.Legs; // Position wild played to non-matching legs position
+      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
-      // Universal wilds should allow all combinations
-      expect(evaluations.length).toBe(12); // 4 characters × 3 body parts
+      // Position wilds played to wrong position should have no valid nominations
+      expect(evaluations.length).toBe(0);
+    });
+
+    it('should identify universal wild cards with position constraint', () => {
+      const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
+      const playedPosition = BodyPart.Torso; // Universal wild played to torso position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
+      
+      // Universal wilds should allow all characters but only for played position
+      expect(evaluations.every(opt => opt.bodyPart === BodyPart.Torso)).toBe(true);
+      expect(evaluations.length).toBe(4); // 4 characters × 1 body part (torso)
     });
   });
 
@@ -79,7 +93,8 @@ describe('WildCardNominator', () => {
         priority: 'high'
       }];
 
-      const evaluations = nominator.evaluateNominations(universalWild, mockStack, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Wild card played to head position
+      const evaluations = nominator.evaluateNominations(universalWild, mockStack, mockGameAnalysis, mockHand, [], playedPosition);
       const bestOption = nominator.selectBestNomination(evaluations);
 
       expect(bestOption.character).toBe(Character.Ninja);
@@ -118,7 +133,8 @@ describe('WildCardNominator', () => {
         urgency: 'critical'
       }];
 
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Torso; // Wild card played to torso position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       const bestOption = nominator.selectBestNomination(evaluations);
 
       expect(bestOption.character).toBe(Character.Pirate);
@@ -148,9 +164,10 @@ describe('WildCardNominator', () => {
       const handCards = [new Card('2', Character.Robot, BodyPart.Legs)];
       mockHand = { getCards: () => handCards } as any;
 
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Torso; // Wild card played to torso position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
-      const robotOptions = evaluations.filter(opt => opt.character === Character.Robot);
+      const robotOptions = evaluations.filter(opt => opt.character === Character.Robot && opt.bodyPart === BodyPart.Torso);
       expect(robotOptions.length).toBeGreaterThan(0);
       
       const robotTorsoOption = robotOptions.find(opt => opt.bodyPart === BodyPart.Torso);
@@ -174,7 +191,8 @@ describe('WildCardNominator', () => {
       };
       mockGameAnalysis.ownProgress.set(Character.Zombie, stackProgress);
 
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Legs; // Wild card played to legs position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       const zombieLegsOption = evaluations.find(opt => 
         opt.character === Character.Zombie && opt.bodyPart === BodyPart.Legs
@@ -195,7 +213,8 @@ describe('WildCardNominator', () => {
       ];
       mockHand = { getCards: () => handCards } as any;
 
-      const options = nominator.optimizeForFutureBuilding(universalWild, mockHand, []);
+      const playedPosition = BodyPart.Head; // Wild card played to head position
+      const options = nominator.optimizeForFutureBuilding(universalWild, mockHand, [], playedPosition);
       
       const pirateOptions = options.filter(opt => opt.character === Character.Pirate);
       expect(pirateOptions.length).toBeGreaterThan(0);
@@ -208,7 +227,8 @@ describe('WildCardNominator', () => {
     it('should give bonuses for character wilds used optimally', () => {
       const ninjaWild = new Card('1', Character.Ninja, BodyPart.Wild);
       
-      const evaluations = nominator.evaluateNominations(ninjaWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Wild card played to head position
+      const evaluations = nominator.evaluateNominations(ninjaWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       // All evaluations should be for Ninja and have type bonus
       expect(evaluations.every(opt => opt.character === Character.Ninja)).toBe(true);
@@ -218,7 +238,8 @@ describe('WildCardNominator', () => {
     it('should give bonuses for position wilds used optimally', () => {
       const headWild = new Card('1', Character.Wild, BodyPart.Head);
       
-      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Position wild played to matching head position
+      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       // All evaluations should be for Head and have type bonus
       expect(evaluations.every(opt => opt.bodyPart === BodyPart.Head)).toBe(true);
@@ -228,7 +249,8 @@ describe('WildCardNominator', () => {
     it('should give smaller bonuses for universal wilds', () => {
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Universal wild played to head position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       // All evaluations should have universal bonus
       expect(evaluations.every(opt => opt.reasoning.includes('wild card type bonus: +25'))).toBe(true);
@@ -239,7 +261,8 @@ describe('WildCardNominator', () => {
     it('should prioritize high-value characters for new development', () => {
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Universal wild played to head position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       const ninjaOption = evaluations.find(opt => opt.character === Character.Ninja);
       const zombieOption = evaluations.find(opt => opt.character === Character.Zombie);
@@ -258,7 +281,8 @@ describe('WildCardNominator', () => {
       ];
       mockHand = { getCards: () => handCards } as any;
 
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Universal wild played to head position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       const robotOptions = evaluations.filter(opt => opt.character === Character.Robot);
       
@@ -272,7 +296,8 @@ describe('WildCardNominator', () => {
     it('should handle empty nomination options gracefully', () => {
       const invalidCard = new Card('1', Character.Ninja, BodyPart.Head); // Not a wild card
       
-      const evaluations = nominator.evaluateNominations(invalidCard, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head;
+      const evaluations = nominator.evaluateNominations(invalidCard, null, mockGameAnalysis, mockHand, [], playedPosition);
       const bestOption = nominator.selectBestNomination(evaluations);
 
       // Should provide fallback nomination
@@ -298,16 +323,18 @@ describe('WildCardNominator', () => {
         totalWildCards: 0
       };
 
-      const evaluations = nominator.evaluateNominations(universalWild, null, emptyAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Torso; // Universal wild played to torso position
+      const evaluations = nominator.evaluateNominations(universalWild, null, emptyAnalysis, mockHand, [], playedPosition);
       
-      expect(evaluations.length).toBe(12); // Should still generate all possible nominations
+      expect(evaluations.length).toBe(4); // Should generate nominations for all characters but only played position
       expect(evaluations.every(opt => opt.value >= 0)).toBe(true); // All should have non-negative values
     });
 
     it('should handle null target stack', () => {
       const universalWild = new Card('1', Character.Wild, BodyPart.Wild);
       
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Universal wild played to head position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       expect(evaluations.length).toBeGreaterThan(0);
       expect(() => nominator.selectBestNomination(evaluations)).not.toThrow();
@@ -331,7 +358,8 @@ describe('WildCardNominator', () => {
 
       const startTime = performance.now();
       
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Universal wild played to head position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       const bestOption = nominator.selectBestNomination(evaluations);
       
       const endTime = performance.now();
@@ -360,7 +388,8 @@ describe('WildCardNominator', () => {
       const handCards = [new Card('4', Character.Ninja, BodyPart.Legs)];
       mockHand = { getCards: () => handCards } as any;
 
-      const evaluations = nominator.evaluateNominations(ninjaWild, stackWithNinja, mockGameAnalysis, mockHand, [stackWithNinja]);
+      const playedPosition = BodyPart.Legs; // Ninja wild played to legs position to complete stack
+      const evaluations = nominator.evaluateNominations(ninjaWild, stackWithNinja, mockGameAnalysis, mockHand, [stackWithNinja], playedPosition);
       
       const legsOption = evaluations.find(opt => opt.bodyPart === BodyPart.Legs);
       expect(legsOption?.character).toBe(Character.Ninja);
@@ -392,7 +421,8 @@ describe('WildCardNominator', () => {
       const handCards = [new Card('5', Character.Robot, BodyPart.Legs)];
       mockHand = { getCards: () => handCards } as any;
 
-      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [ninjaStack, robotStack]);
+      const playedPosition = BodyPart.Legs; // Universal wild played to legs position
+      const evaluations = nominator.evaluateNominations(universalWild, null, mockGameAnalysis, mockHand, [ninjaStack, robotStack], playedPosition);
       
       // Should prefer Robot Legs for future completion
       const robotLegsOptions = evaluations.filter(opt => 
@@ -418,7 +448,8 @@ describe('WildCardNominator', () => {
         completionLevel: 2, isComplete: false, missingPieces: [BodyPart.Head]
       });
 
-      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, []);
+      const playedPosition = BodyPart.Head; // Position wild played to matching head position
+      const evaluations = nominator.evaluateNominations(headWild, null, mockGameAnalysis, mockHand, [], playedPosition);
       
       // Should prefer Pirate Head (strongest character with 2/3)
       const pirateHeadOption = evaluations.find(opt => opt.character === Character.Pirate);
