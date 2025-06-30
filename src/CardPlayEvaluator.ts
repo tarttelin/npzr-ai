@@ -241,7 +241,7 @@ export class CardPlayEvaluator {
   /**
    * Evaluate nominations for a wild card played at a specific position
    */
-  private evaluateNominationsForPosition(wildCard: Card, playedPosition: BodyPart, targetStack: Stack | undefined, gameAnalysis: GameAnalysis, hand: Hand, ownStacks: Stack[]): NominationOption[] {
+  private evaluateNominationsForPosition(wildCard: Card, playedPosition: BodyPart, targetStack: Stack | undefined, gameAnalysis: GameAnalysis, hand: Hand, _ownStacks: Stack[]): NominationOption[] {
     const options: NominationOption[] = [];
     const validCombinations = this.getValidNominations(wildCard, playedPosition);
     
