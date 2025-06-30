@@ -73,11 +73,11 @@ describe('MoveEvaluator', () => {
 
       const evaluations = evaluator.evaluateAllMoves(ownStacks, [], analysis);
 
-      // Find the completion move
+      // Find the completion move (now prioritized as cascade)
       const completionMove = evaluations.find(e => e.completesStack);
       expect(completionMove).toBeDefined();
       expect(completionMove!.value).toBeGreaterThan(1000);
-      expect(completionMove!.type).toBe('completion');
+      expect(['completion', 'cascade']).toContain(completionMove!.type); // Can be either, cascade is higher priority
     });
 
     test('should evaluate disruption moves (stealing opponent pieces)', () => {
@@ -108,7 +108,10 @@ describe('MoveEvaluator', () => {
         expect(move.value).toBeGreaterThan(300); // Base disruption value
         expect(move.type).toBe('disruption');
         expect(move.fromStack.getOwnerId()).toBe('player2'); // Stealing from opponent
-        expect(move.toStack?.getOwnerId()).toBe('player1'); // Moving to own stack or creating new
+        // toStack can be either an existing own stack or null (new stack creation)
+        if (move.toStack !== null) {
+          expect(move.toStack.getOwnerId()).toBe('player1'); // Moving to own stack
+        }
       });
     });
   });

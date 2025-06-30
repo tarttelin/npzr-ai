@@ -29,7 +29,21 @@ export class MoveEvaluator {
     const evaluations: MoveEvaluation[] = [];
     const allStacks = [...ownStacks, ...opponentStacks];
 
-    // Evaluate moves from each stack and pile
+    // First, add high-priority strategic moves
+    
+    // 1. Cascade opportunities (highest priority - completing stacks with chain potential)
+    const cascadeOpportunities = this.findCascadeOpportunities(ownStacks, analysis);
+    evaluations.push(...cascadeOpportunities);
+    
+    // 2. Disruption moves (steal opponent pieces strategically)
+    const disruptionMoves = this.findDisruptionMoves(ownStacks, opponentStacks, analysis);
+    evaluations.push(...disruptionMoves);
+    
+    // 3. Organization moves (consolidate matching characters)
+    const organizationMoves = this.optimizeStackOrganization(ownStacks);
+    evaluations.push(...organizationMoves);
+
+    // Then, evaluate all other possible moves
     for (const fromStack of allStacks) {
       for (const fromPile of [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]) {
         const cards = fromStack.getCardsFromPile(fromPile);
@@ -43,20 +57,41 @@ export class MoveEvaluator {
           
           for (const toPile of [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]) {
             if (toStack.canAcceptCard(topCard, toPile)) {
-              const evaluation = this.evaluateMove(
-                fromStack, fromPile, toStack, toPile, topCard, analysis, ownStacks, opponentStacks
+              // Skip if this move is already covered by specialized analysis
+              const isDuplicate = evaluations.some(existing => 
+                existing.cardId === topCard.id && 
+                existing.fromStack.getId() === fromStack.getId() &&
+                existing.toStack?.getId() === toStack.getId() &&
+                existing.fromPile === fromPile &&
+                existing.toPile === toPile
               );
-              evaluations.push(evaluation);
+              
+              if (!isDuplicate) {
+                const evaluation = this.evaluateMove(
+                  fromStack, fromPile, toStack, toPile, topCard, analysis, ownStacks, opponentStacks
+                );
+                evaluations.push(evaluation);
+              }
             }
           }
         }
 
         // Evaluate creating new stack (only for own pieces)
         if (ownStacks.includes(fromStack)) {
-          const newStackEvaluation = this.evaluateNewStackMove(
-            fromStack, fromPile, topCard, analysis, ownStacks, opponentStacks
+          // Skip if this new stack move is already covered by specialized analysis
+          const isDuplicate = evaluations.some(existing => 
+            existing.cardId === topCard.id && 
+            existing.fromStack.getId() === fromStack.getId() &&
+            existing.toStack === null &&
+            existing.fromPile === fromPile
           );
-          evaluations.push(newStackEvaluation);
+          
+          if (!isDuplicate) {
+            const newStackEvaluation = this.evaluateNewStackMove(
+              fromStack, fromPile, topCard, analysis, ownStacks, opponentStacks
+            );
+            evaluations.push(newStackEvaluation);
+          }
         }
       }
     }
