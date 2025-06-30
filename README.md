@@ -8,10 +8,11 @@ NPZR is a tactical two-player card game where players compete to be the first to
 
 ### Game Features
 - **44-card deck** (36 regular + 8 wild cards)
-- **Strategic gameplay** with defensive moves
+- **Strategic gameplay** with defensive moves and opponent disruption
 - **Wild card mechanics** with nomination system
 - **Move cascading** system for dynamic gameplay
-- **Fast cards** allowing additional plays per turn
+- **Strategic move system** with new stack creation for optimal organization
+- **AI-driven gameplay** with sophisticated decision-making algorithms
 
 ## Quick Start
 
@@ -35,25 +36,43 @@ npm run build
 ### Basic Usage
 
 ```typescript
-import { NPZRGameEngine, Character, BodyPart } from './src';
+import { GameEngine, Character, BodyPart } from './src';
 
 // Create a new game
-const game = new NPZRGameEngine();
+const game = new GameEngine();
+game.createGame();
 
-// Get current player's hand
-const hand = game.getPlayerHand('player1');
-console.log(`Player 1 has ${hand.length} cards`);
+// Get players
+const player1 = game.getPlayer('player1');
+const player2 = game.getPlayer('player2');
 
-// Play a turn (example)
-const regularCard = hand[0];
-const success = game.playTurn({
-  card: regularCard,
-  targetStackId: undefined // Creates new stack
+// Play a card to a stack
+player1.playCard(card, {
+  targetStackId: 'stack1',
+  targetPile: BodyPart.Head
+});
+
+// Move cards between stacks (two options)
+
+// 1. Move to existing stack
+player1.moveCard({
+  cardId: 'card-id',
+  fromStackId: 'stack1',
+  fromPile: BodyPart.Head,
+  toStackId: 'stack2',      // Move to existing stack
+  toPile: BodyPart.Head
+});
+
+// 2. Create new stack (strategic AI feature)
+player1.moveCard({
+  cardId: 'card-id', 
+  fromStackId: 'stack1',
+  fromPile: BodyPart.Torso,
+  // toStackId omitted - creates new stack automatically
+  toPile: BodyPart.Torso
 });
 
 // Check game state
-console.log(`Current player: ${game.getCurrentPlayer()}`);
-console.log(`Pending moves: ${game.getPendingMoves()}`);
 console.log(`Game finished: ${game.isGameFinished()}`);
 ```
 

@@ -8,12 +8,13 @@ export { PlayerState, PlayerStateType, Action } from './PlayerState.js';
 export { Player, PlayCardOptions, MoveOptions, Position } from './Player.js';
 export { GameEngine } from './GameEngine.js';
 export { AIPlayer, Difficulty } from './AIPlayer.js';
+export { MoveEvaluator, MoveEvaluation } from './MoveEvaluator.js';
 export { 
   GameStateAnalyzer, 
   StackProgress, 
   HandAnalysis, 
   CompletionOpportunity, 
-  BlockingOpportunity, 
+  DisruptionOpportunity, 
   GameAnalysis,
   ThreatLevel,
   GamePhase

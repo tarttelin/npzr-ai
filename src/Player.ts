@@ -13,7 +13,7 @@ export interface MoveOptions {
   cardId: string;
   fromStackId: string;
   fromPile: BodyPart;
-  toStackId: string;
+  toStackId?: string; // Optional - if not provided, creates new stack
   toPile: BodyPart;
 }
 
