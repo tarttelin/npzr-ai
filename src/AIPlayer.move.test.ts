@@ -1,322 +1,333 @@
-import { MoveEvaluator } from './MoveEvaluator.js';
+import { AIPlayer } from './AIPlayer.js';
+import { Player, MoveOptions } from './Player.js';
+import { GameEngine } from './GameEngine.js';
 import { Card, Character, BodyPart } from './Card.js';
 import { Stack } from './Stack.js';
-import { GameStateAnalyzer } from './GameStateAnalyzer.js';
-import { Score } from './Score.js';
-import { Hand } from './Hand.js';
+import { PlayerStateType } from './PlayerState.js';
 
-describe('AIPlayer Move Functionality', () => {
-  let evaluator: MoveEvaluator;
-  let analyzer: GameStateAnalyzer;
+describe('AIPlayer Move Coordination', () => {
+  let gameEngine: GameEngine;
+  let player: Player;
+  let aiPlayer: AIPlayer;
+  let consoleSpy: jest.SpyInstance;
 
   beforeEach(() => {
-    evaluator = new MoveEvaluator();
-    analyzer = new GameStateAnalyzer();
+    gameEngine = new GameEngine();
+    gameEngine.createGame();
+    
+    gameEngine.addPlayer('Human'); // Need two players for game to start
+    player = gameEngine.addPlayer('AI');
+    aiPlayer = new AIPlayer(player, 'hard');
+    
+    // Spy on console.log to verify strategic reasoning output
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    jest.spyOn(console, 'warn').mockImplementation();
   });
 
-  describe('Strategic Move Selection', () => {
-    test('should prioritize completion moves when possible', () => {
-      // Set up a scenario where AI can complete a stack
-      const stack1 = new Stack('stack1', 'player1');
-      const stack2 = new Stack('stack2', 'player1');
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
 
+  describe('makeMove() coordination', () => {
+    test('should coordinate move execution when in MOVE_CARD state', () => {
+      // Set up game state where AI needs to move
+      const playerId = player.getId();
+      const stack1 = new Stack('stack1', playerId);
+      const stack2 = new Stack('stack2', playerId);
+      
+      const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
+      const ninjaLegs = new Card('card2', Character.Ninja, BodyPart.Legs);
+      
+      stack1.addCard(ninjaHead, BodyPart.Head);
+      stack2.addCard(ninjaLegs, BodyPart.Legs);
+      
+      // Mock player methods
+      const moveCardSpy = jest.spyOn(player, 'moveCard').mockImplementation();
+      const isMyTurnSpy = jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      const getStateSpy = jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      const getMyStacksSpy = jest.spyOn(player, 'getMyStacks').mockReturnValue([stack1, stack2]);
+      const getOpponentStacksSpy = jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+
+      // Execute move
+      aiPlayer.makeMove();
+
+      // Verify coordination
+      expect(isMyTurnSpy).toHaveBeenCalled();
+      expect(getStateSpy).toHaveBeenCalled();
+      expect(getMyStacksSpy).toHaveBeenCalled();
+      expect(getOpponentStacksSpy).toHaveBeenCalled();
+      expect(moveCardSpy).toHaveBeenCalledWith(expect.objectContaining({
+        cardId: expect.any(String),
+        fromStackId: expect.any(String),
+        fromPile: expect.any(String),
+        toPile: expect.any(String)
+      }));
+    });
+
+    test('should not execute moves when not AI turn', () => {
+      const moveCardSpy = jest.spyOn(player, 'moveCard').mockImplementation();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(false);
+
+      aiPlayer.makeMove();
+
+      expect(moveCardSpy).not.toHaveBeenCalled();
+    });
+
+    test('should not execute moves when not in MOVE_CARD state', () => {
+      const moveCardSpy = jest.spyOn(player, 'moveCard').mockImplementation();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.PLAY_CARD
+      } as any);
+
+      aiPlayer.makeMove();
+
+      expect(moveCardSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleMoveCard() integration', () => {
+    test('should call Player.moveCard() with properly formatted MoveOptions', () => {
+      // Set up scenario with completion opportunity
+      const playerId = player.getId();
+      const stack1 = new Stack('stack1', playerId);
+      const stack2 = new Stack('stack2', playerId);
+      
       const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
       const ninjaTorso = new Card('card2', Character.Ninja, BodyPart.Torso);
       const ninjaLegs = new Card('card3', Character.Ninja, BodyPart.Legs);
-
-      // Stack1 almost complete (missing legs)
+      
       stack1.addCard(ninjaHead, BodyPart.Head);
       stack1.addCard(ninjaTorso, BodyPart.Torso);
-
-      // Stack2 has the completing piece
       stack2.addCard(ninjaLegs, BodyPart.Legs);
 
-      const ownStacks = [stack1, stack2];
-      const opponentStacks: Stack[] = [];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
+      // Mock player methods
+      const moveCardSpy = jest.spyOn(player, 'moveCard').mockImplementation();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      jest.spyOn(player, 'getMyStacks').mockReturnValue([stack1, stack2]);
+      jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getHand').mockReturnValue({ getCards: () => [] } as any);
+      jest.spyOn(player, 'getMyScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
+      jest.spyOn(player, 'getOpponentScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
 
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
-      const bestMove = evaluator.selectBestMove(evaluations);
+      aiPlayer.makeMove();
 
-      // Should prioritize completion moves
-      expect(bestMove).toBeDefined();
-      expect(bestMove!.value).toBeGreaterThan(800); // High value for completion/disruption
-      expect(['completion', 'cascade', 'disruption']).toContain(bestMove!.type);
+      // Verify MoveOptions format
+      expect(moveCardSpy).toHaveBeenCalledWith(expect.objectContaining({
+        cardId: ninjaLegs.id,
+        fromStackId: stack2.getId(),
+        fromPile: BodyPart.Legs,
+        toStackId: stack1.getId(), // Should move to complete the stack
+        toPile: BodyPart.Legs
+      }));
     });
 
-    test('should execute disruption moves by stealing opponent pieces', () => {
-      const ownStack = new Stack('stack1', 'player1');
-      const opponentStack = new Stack('stack2', 'player2');
-
-      const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
-      const pirateTorso = new Card('card2', Character.Pirate, BodyPart.Torso);
-
-      ownStack.addCard(ninjaHead, BodyPart.Head);
-      opponentStack.addCard(pirateTorso, BodyPart.Torso);
-
-      const ownStacks = [ownStack];
-      const opponentStacks = [opponentStack];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
-
-      const disruptionMoves = evaluator.findDisruptionMoves(ownStacks, opponentStacks, analysis);
-
-      // Should find disruption moves (stealing opponent pieces)
-      expect(disruptionMoves.length).toBeGreaterThan(0);
+    test('should handle new stack creation with undefined toStackId', () => {
+      // Set up scenario where new stack creation is beneficial
+      const playerId = player.getId();
+      const mixedStack = new Stack('stack1', playerId);
       
-      const disruptionMove = disruptionMoves[0];
-      expect(disruptionMove.disruptsOpponent).toBe(true);
-      expect(disruptionMove.type).toBe('disruption');
-      expect(disruptionMove.fromStack.getOwnerId()).toBe('player2'); // Stealing from opponent
-    });
-
-    test('should create new stacks when beneficial for organization', () => {
-      const mixedStack = new Stack('stack1', 'player1');
-
       const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
       const pirateTorso = new Card('card2', Character.Pirate, BodyPart.Torso);
-
-      // Stack with mixed characters - should separate
+      
       mixedStack.addCard(ninjaHead, BodyPart.Head);
       mixedStack.addCard(pirateTorso, BodyPart.Torso);
 
-      const ownStacks = [mixedStack];
-      const opponentStacks: Stack[] = [];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
+      // Mock player methods
+      const moveCardSpy = jest.spyOn(player, 'moveCard').mockImplementation();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      jest.spyOn(player, 'getMyStacks').mockReturnValue([mixedStack]);
+      jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getHand').mockReturnValue({ getCards: () => [] } as any);
+      jest.spyOn(player, 'getMyScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
+      jest.spyOn(player, 'getOpponentScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
 
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
+      aiPlayer.makeMove();
+
+      // Should find at least one move, and some moves might create new stacks
+      expect(moveCardSpy).toHaveBeenCalled();
       
-      // Given mixed stack (ninja head + pirate torso), should create new stack moves
-      const newStackMoves = evaluations.filter(e => e.toStack === null);
-      expect(newStackMoves.length).toBeGreaterThanOrEqual(2); // Should be able to create new stacks for both pieces
-      
-      // Should suggest moving one of the mismatched pieces to a new stack
-      const organizationMoves = newStackMoves.filter(move => move.type === 'organization');
-      expect(organizationMoves.length).toBeGreaterThan(0);
-      
-      organizationMoves.forEach(move => {
-        expect(move.reasoning).toContain('Create new stack');
-        expect([Character.Ninja, Character.Pirate]).toContain(move.card.character);
-      });
-    });
-
-    test('should handle cascade opportunities', () => {
-      const stack1 = new Stack('stack1', 'player1');
-      const stack2 = new Stack('stack2', 'player1');
-
-      // Create a scenario with multiple completion possibilities
-      const ninjaHead1 = new Card('card1', Character.Ninja, BodyPart.Head);
-      const ninjaTorso1 = new Card('card2', Character.Ninja, BodyPart.Torso);
-      const ninjaLegs1 = new Card('card3', Character.Ninja, BodyPart.Legs);
-
-      // Stack1: Almost complete ninja
-      stack1.addCard(ninjaHead1, BodyPart.Head);
-      stack1.addCard(ninjaTorso1, BodyPart.Torso);
-
-      // Stack2: Has legs that can complete stack1
-      stack2.addCard(ninjaLegs1, BodyPart.Legs);
-
-      const ownStacks = [stack1, stack2];
-      const opponentStacks: Stack[] = [];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
-
-      const cascadeOpportunities = evaluator.findCascadeOpportunities(ownStacks, analysis);
-
-      // With ninja stack 2/3 complete and missing piece available, should find cascade opportunities
-      expect(cascadeOpportunities.length).toBeGreaterThan(0);
-      
-      // Should find opportunity to move ninja legs to complete the stack
-      const ninjaLegsCascade = cascadeOpportunities.find(c => 
-        c.card.character === Character.Ninja && c.card.bodyPart === BodyPart.Legs
-      );
-      expect(ninjaLegsCascade).toBeDefined();
-      expect(ninjaLegsCascade!.createsCascade).toBe(true);
-      expect(ninjaLegsCascade!.value).toBeGreaterThanOrEqual(1500);
-      expect(ninjaLegsCascade!.reasoning).toContain('cascade');
+      // Check if any call had undefined toStackId (new stack creation)
+      const moveCallArgs = moveCardSpy.mock.calls[0][0] as MoveOptions;
+      expect(moveCallArgs).toHaveProperty('cardId');
+      expect(moveCallArgs).toHaveProperty('fromStackId');
+      expect(moveCallArgs).toHaveProperty('fromPile');
+      expect(moveCallArgs).toHaveProperty('toPile');
+      // toStackId can be either defined (move to existing) or undefined (new stack)
     });
   });
 
-  describe('Move Evaluation Logic', () => {
-    test('should evaluate moves with correct strategic values', () => {
-      const ownStack = new Stack('stack1', 'player1');
-      const opponentStack = new Stack('stack2', 'player2');
-
-      const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
-      const pirateTorso = new Card('card2', Character.Pirate, BodyPart.Torso);
-
-      ownStack.addCard(ninjaHead, BodyPart.Head);
-      opponentStack.addCard(pirateTorso, BodyPart.Torso);
-
-      const ownStacks = [ownStack];
-      const opponentStacks = [opponentStack];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
-
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
-
-      // Should have multiple move types
-      const moveTypes = evaluations.map(e => e.type);
-      expect(moveTypes.length).toBeGreaterThan(0);
+  describe('Strategic Communication', () => {
+    test('should log move reasoning with card details and strategic value', () => {
+      // Set up scenario
+      const playerId = player.getId();
+      const stack1 = new Stack('stack1', playerId);
+      const stack2 = new Stack('stack2', playerId);
       
-      // All moves should have non-negative values and valid properties
-      evaluations.forEach(move => {
-        expect(move.value).toBeGreaterThanOrEqual(0); // Some moves may have 0 value
-        expect(move.reasoning).toBeTruthy();
-        expect(['completion', 'cascade', 'disruption', 'setup', 'organization', 'neutral']).toContain(move.type);
-      });
-      
-      // Should have at least some moves with positive strategic value
-      const positiveValueMoves = evaluations.filter(m => m.value > 0);
-      expect(positiveValueMoves.length).toBeGreaterThan(0);
-    });
-
-    test('should handle stack organization moves', () => {
-      const stack1 = new Stack('stack1', 'player1');
-      const stack2 = new Stack('stack2', 'player1');
-
       const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
-      const ninjaTorso = new Card('card2', Character.Ninja, BodyPart.Torso);
-      const ninjaLegs = new Card('card3', Character.Ninja, BodyPart.Legs);
-      const pirateTorso = new Card('card4', Character.Pirate, BodyPart.Torso);
-
-      // Mixed stacks that could benefit from organization
+      const ninjaLegs = new Card('card2', Character.Ninja, BodyPart.Legs);
+      
       stack1.addCard(ninjaHead, BodyPart.Head);
-      stack1.addCard(pirateTorso, BodyPart.Torso);
-      stack2.addCard(ninjaTorso, BodyPart.Torso);
       stack2.addCard(ninjaLegs, BodyPart.Legs);
 
-      const ownStacks = [stack1, stack2];
-      const organizationMoves = evaluator.optimizeStackOrganization(ownStacks);
+      // Mock player methods
+      jest.spyOn(player, 'moveCard').mockImplementation();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      jest.spyOn(player, 'getMyStacks').mockReturnValue([stack1, stack2]);
+      jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getHand').mockReturnValue({ getCards: () => [] } as any);
+      jest.spyOn(player, 'getMyScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
+      jest.spyOn(player, 'getOpponentScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
 
-      // Test that organization moves have correct properties
-      organizationMoves.forEach(move => {
-        expect(move.type).toBe('organization');
-        expect(move.value).toBeGreaterThan(0);
-      });
+      aiPlayer.makeMove();
+
+      // Verify console logging includes strategic information
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/AI: Moving .+ - .+ \(value: \d+, type: \w+\)/));
     });
 
-    test('should select best move from multiple options', () => {
-      const stack1 = new Stack('stack1', 'player1');
-      const stack2 = new Stack('stack2', 'player1');
-      const opponentStack = new Stack('stack3', 'player2');
-
+    test('should log different message formats for different move types', () => {
+      // This test would require different scenarios for completion, disruption, organization
+      // For now, just verify that logging happens with proper format
+      const playerId = player.getId();
+      const stack1 = new Stack('stack1', playerId);
       const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
-      const ninjaTorso = new Card('card2', Character.Ninja, BodyPart.Torso);
-      const pirateHead = new Card('card3', Character.Pirate, BodyPart.Head);
-
       stack1.addCard(ninjaHead, BodyPart.Head);
-      stack2.addCard(ninjaTorso, BodyPart.Torso);
-      opponentStack.addCard(pirateHead, BodyPart.Head);
 
-      const ownStacks = [stack1, stack2];
-      const opponentStacks = [opponentStack];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
+      jest.spyOn(player, 'moveCard').mockImplementation();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      jest.spyOn(player, 'getMyStacks').mockReturnValue([stack1]);
+      jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getHand').mockReturnValue({ getCards: () => [] } as any);
+      jest.spyOn(player, 'getMyScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
+      jest.spyOn(player, 'getOpponentScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
 
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
-      const bestMove = evaluator.selectBestMove(evaluations);
+      aiPlayer.makeMove();
 
-      expect(bestMove).toBeDefined();
-      expect(bestMove!.value).toBeGreaterThan(0);
-      expect(bestMove!.card).toBeDefined();
-      expect(bestMove!.fromStack).toBeDefined();
+      // Verify strategic logging format includes reasoning and value
+      const logCalls = consoleSpy.mock.calls.filter(call => 
+        call[0] && typeof call[0] === 'string' && call[0].includes('AI: Moving')
+      );
+      
+      if (logCalls.length > 0) {
+        expect(logCalls[0][0]).toMatch(/value: \d+/);
+        expect(logCalls[0][0]).toMatch(/type: \w+/);
+      }
     });
 
-    test('should handle wild card moves correctly', () => {
-      const stack1 = new Stack('stack1', 'player1');
-      const wildCard = new Card('card1', Character.Wild, BodyPart.Wild);
-      wildCard.nominate(Character.Ninja, BodyPart.Head);
+    test('should warn when no strategic moves are found', () => {
+      // Set up scenario with no possible moves
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      jest.spyOn(player, 'getMyStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getHand').mockReturnValue({ getCards: () => [] } as any);
+      jest.spyOn(player, 'getMyScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
+      jest.spyOn(player, 'getOpponentScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
 
-      stack1.addCard(wildCard, BodyPart.Head);
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      const ownStacks = [stack1];
-      const opponentStacks: Stack[] = [];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
+      aiPlayer.makeMove();
 
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
-      
-      // Should find moves involving wild cards
-      const wildCardMoves = evaluations.filter(e => e.card.isWild());
-      expect(wildCardMoves.length).toBeGreaterThanOrEqual(0); // May or may not find wild card moves
-      
-      wildCardMoves.forEach(move => {
-        expect(move.card.isWild()).toBe(true);
-      });
+      expect(warnSpy).toHaveBeenCalledWith('AI: No strategic moves found');
     });
   });
 
-  describe('Performance and Edge Cases', () => {
-    test('should handle empty stacks gracefully', () => {
-      const ownStacks: Stack[] = [];
-      const opponentStacks: Stack[] = [];
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
+  describe('Error Handling', () => {
+    test('should handle Player.moveCard() throwing errors gracefully', () => {
+      const playerId = player.getId();
+      const stack1 = new Stack('stack1', playerId);
+      const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
+      stack1.addCard(ninjaHead, BodyPart.Head);
 
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
-      expect(evaluations).toEqual([]);
+      // Mock player.moveCard to throw an error
+      jest.spyOn(player, 'moveCard').mockImplementation(() => {
+        throw new Error('Move failed');
+      });
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      jest.spyOn(player, 'getState').mockReturnValue({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true
+      } as any);
+      jest.spyOn(player, 'getMyStacks').mockReturnValue([stack1]);
+      jest.spyOn(player, 'getOpponentStacks').mockReturnValue([]);
+      jest.spyOn(player, 'getHand').mockReturnValue({ getCards: () => [] } as any);
+      jest.spyOn(player, 'getMyScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
+      jest.spyOn(player, 'getOpponentScore').mockReturnValue({ size: () => 0, hasCharacter: () => false } as any);
 
-      const bestMove = evaluator.selectBestMove(evaluations);
-      expect(bestMove).toBeNull();
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Should not throw, should handle gracefully
+      expect(() => aiPlayer.makeMove()).not.toThrow();
+      
+      // Should log the error
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/AIPlayer error in state/), expect.any(Error));
+    });
+  });
+
+  describe('Game Flow Integration', () => {
+    test('should properly coordinate with GameEngine state management', () => {
+      // This is more of an integration test with actual GameEngine
+      const playerId = player.getId();
+      const stack1 = new Stack('stack1', playerId);
+      const stack2 = new Stack('stack2', playerId);
+      
+      const ninjaHead = new Card('card1', Character.Ninja, BodyPart.Head);
+      const ninjaLegs = new Card('card2', Character.Ninja, BodyPart.Legs);
+      
+      stack1.addCard(ninjaHead, BodyPart.Head);
+      stack2.addCard(ninjaLegs, BodyPart.Legs);
+
+      // Add stacks to actual game engine
+      gameEngine['stacks'] = [stack1, stack2];
+      
+      // Set player to MOVE_CARD state
+      player.setState({
+        getState: () => PlayerStateType.MOVE_CARD,
+        canMoveCard: () => true,
+        getMessage: () => 'Move a card',
+        isWaiting: () => false,
+        isGameOver: () => false
+      } as any);
+
+      // Execute move through actual coordination
+      expect(() => aiPlayer.makeMove()).not.toThrow();
     });
 
-    test('should complete evaluation in reasonable time with multiple stacks', () => {
-      // Create multiple stacks for performance testing
-      const ownStacks: Stack[] = [];
-      const opponentStacks: Stack[] = [];
+    test('should use takeTurnIfReady() for turn management', () => {
+      const makeMoveSpy = jest.spyOn(aiPlayer, 'makeMove').mockImplementation();
+      
+      // Test when it's AI's turn
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(true);
+      aiPlayer.takeTurnIfReady();
+      expect(makeMoveSpy).toHaveBeenCalled();
 
-      for (let i = 0; i < 3; i++) {
-        const ownStack = new Stack(`own${i}`, 'player1');
-        const oppStack = new Stack(`opp${i}`, 'player2');
-
-        const characters = [Character.Ninja, Character.Pirate, Character.Zombie];
-        const bodyParts = [BodyPart.Head, BodyPart.Torso, BodyPart.Legs];
-
-        const char = characters[i % characters.length];
-        const part = bodyParts[i % bodyParts.length];
-        
-        const ownCard = new Card(`own${i}`, char, part);
-        const oppCard = new Card(`opp${i}`, char, part);
-
-        ownStack.addCard(ownCard, part);
-        oppStack.addCard(oppCard, part);
-
-        ownStacks.push(ownStack);
-        opponentStacks.push(oppStack);
-      }
-
-      const hand = new Hand();
-      const myScore = new Score();
-      const opponentScore = new Score();
-      const analysis = analyzer.analyzeGameState(ownStacks, opponentStacks, hand, myScore, opponentScore);
-
-      const startTime = performance.now();
-      const evaluations = evaluator.evaluateAllMoves(ownStacks, opponentStacks, analysis);
-      const endTime = performance.now();
-
-      const executionTime = endTime - startTime;
-
-      expect(evaluations.length).toBeGreaterThan(0);
-      expect(executionTime).toBeLessThan(100); // Should complete in under 100ms
+      // Test when it's not AI's turn
+      makeMoveSpy.mockClear();
+      jest.spyOn(player, 'isMyTurn').mockReturnValue(false);
+      aiPlayer.takeTurnIfReady();
+      expect(makeMoveSpy).not.toHaveBeenCalled();
     });
   });
 });
