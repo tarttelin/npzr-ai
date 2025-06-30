@@ -71,13 +71,18 @@ export class MoveEvaluator {
   findCascadeOpportunities(ownStacks: Stack[], analysis: GameAnalysis): MoveEvaluation[] {
     const cascadeOpportunities: MoveEvaluation[] = [];
     
+    // Find completion opportunities for moves (not just hand-based ones)
+    const moveCompletionOpportunities = this.findMoveCompletionOpportunities(ownStacks);
+    
     // Look for completion opportunities that might cascade
-    for (const opportunity of analysis.completionOpportunities) {
+    for (const opportunity of moveCompletionOpportunities) {
       const targetStack = ownStacks.find(s => s.getId() === opportunity.stackId);
       if (!targetStack) continue;
 
       // Find cards that can complete this stack
       for (const fromStack of ownStacks) {
+        if (fromStack.getId() === targetStack.getId()) continue; // Don't move from same stack
+        
         const cards = fromStack.getCardsFromPile(opportunity.neededCard);
         if (cards.length === 0) continue;
 
@@ -110,6 +115,78 @@ export class MoveEvaluator {
     }
 
     return cascadeOpportunities;
+  }
+
+  /**
+   * Find completion opportunities for moves - stacks that are 2/3 complete
+   */
+  private findMoveCompletionOpportunities(ownStacks: Stack[]): Array<{stackId: string, character: Character, neededCard: BodyPart}> {
+    const opportunities: Array<{stackId: string, character: Character, neededCard: BodyPart}> = [];
+    
+    for (const stack of ownStacks) {
+      const topCards = stack.getTopCards();
+      const character = this.determineStackCharacter(topCards);
+      
+      if (character && character !== Character.Wild) {
+        // Count pieces present
+        const pieces = {
+          head: topCards.head ? 1 : 0,
+          torso: topCards.torso ? 1 : 0,
+          legs: topCards.legs ? 1 : 0
+        };
+        
+        const totalPieces = pieces.head + pieces.torso + pieces.legs;
+        
+        // If stack has exactly 2 pieces (2/3 complete), find the missing piece
+        if (totalPieces === 2) {
+          let neededCard: BodyPart;
+          if (!topCards.head) neededCard = BodyPart.Head;
+          else if (!topCards.torso) neededCard = BodyPart.Torso;
+          else neededCard = BodyPart.Legs;
+          
+          opportunities.push({
+            stackId: stack.getId(),
+            character,
+            neededCard
+          });
+        }
+      }
+    }
+    
+    return opportunities;
+  }
+
+  /**
+   * Determine the character of a stack based on its top cards
+   */
+  private determineStackCharacter(topCards: {head?: Card, torso?: Card, legs?: Card}): Character | null {
+    const cards = [topCards.head, topCards.torso, topCards.legs].filter(Boolean) as Card[];
+    if (cards.length === 0) return null;
+    
+    // Count effective characters (considering wild card nominations)
+    const charCounts = new Map<Character, number>();
+    
+    for (const card of cards) {
+      const effectiveChar = this.getEffectiveCharacter(card);
+      if (effectiveChar) {
+        charCounts.set(effectiveChar, (charCounts.get(effectiveChar) || 0) + 1);
+      }
+    }
+    
+    if (charCounts.size === 0) return null;
+    
+    // Return the most common character
+    let dominantChar: Character | null = null;
+    let maxCount = 0;
+    
+    for (const [char, count] of charCounts) {
+      if (count > maxCount) {
+        maxCount = count;
+        dominantChar = char;
+      }
+    }
+    
+    return dominantChar;
   }
 
   /**
@@ -528,35 +605,127 @@ export class MoveEvaluator {
     const charA = this.getStackDominantCharacter(stackA);
     const charB = this.getStackDominantCharacter(stackB);
 
-    if (!charA || !charB || charA === charB) return moves;
+    if (!charA || !charB) return moves;
 
-    // Try moving cards from stackB to stackA if they match stackA's character
-    for (const pile of [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]) {
-      const cards = stackB.getCardsFromPile(pile);
-      if (cards.length === 0) continue;
+    // Case 1: Different dominant characters - try moving matching pieces
+    if (charA !== charB) {
+      // Try moving cards from stackB to stackA if they match stackA's character
+      for (const pile of [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]) {
+        const cards = stackB.getCardsFromPile(pile);
+        if (cards.length === 0) continue;
 
-      const topCard = cards[cards.length - 1];
-      if (topCard.character === charA || topCard.isWild()) {
-        if (stackA.canAcceptCard(topCard, pile)) {
-          moves.push({
-            fromStack: stackB,
-            fromPile: pile,
-            toStack: stackA,
-            toPile: pile,
-            cardId: topCard.id,
-            card: topCard,
-            value: 200,
-            reasoning: `Consolidate ${charA} pieces`,
-            createsCascade: false,
-            completesStack: this.wouldCompleteStack(stackA, topCard, pile),
-            disruptsOpponent: false,
-            type: 'organization'
-          });
+        const topCard = cards[cards.length - 1];
+        if (topCard.character === charA || topCard.isWild()) {
+          if (stackA.canAcceptCard(topCard, pile)) {
+            moves.push({
+              fromStack: stackB,
+              fromPile: pile,
+              toStack: stackA,
+              toPile: pile,
+              cardId: topCard.id,
+              card: topCard,
+              value: 200,
+              reasoning: `Consolidate ${charA} pieces`,
+              createsCascade: false,
+              completesStack: this.wouldCompleteStack(stackA, topCard, pile),
+              disruptsOpponent: false,
+              type: 'organization'
+            });
+          }
+        }
+      }
+
+      // Try moving cards from stackA to stackB if they match stackB's character
+      for (const pile of [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]) {
+        const cards = stackA.getCardsFromPile(pile);
+        if (cards.length === 0) continue;
+
+        const topCard = cards[cards.length - 1];
+        if (topCard.character === charB || topCard.isWild()) {
+          if (stackB.canAcceptCard(topCard, pile)) {
+            moves.push({
+              fromStack: stackA,
+              fromPile: pile,
+              toStack: stackB,
+              toPile: pile,
+              cardId: topCard.id,
+              card: topCard,
+              value: 200,
+              reasoning: `Consolidate ${charB} pieces`,
+              createsCascade: false,
+              completesStack: this.wouldCompleteStack(stackB, topCard, pile),
+              disruptsOpponent: false,
+              type: 'organization'
+            });
+          }
         }
       }
     }
 
+    // Case 2: Same dominant character - consolidate into the more pure stack
+    if (charA === charB) {
+      const purityA = this.calculateStackPurity(stackA, charA);
+      const purityB = this.calculateStackPurity(stackB, charB);
+      
+      // Move pieces from the less pure stack to the more pure one
+      if (purityA > purityB) {
+        // Move matching pieces from stackB to stackA
+        this.addConsolidationMovesFromTo(stackB, stackA, charA, moves);
+      } else if (purityB > purityA) {
+        // Move matching pieces from stackA to stackB
+        this.addConsolidationMovesFromTo(stackA, stackB, charB, moves);
+      }
+    }
+
     return moves;
+  }
+
+  /**
+   * Add consolidation moves from one stack to another for a specific character
+   */
+  private addConsolidationMovesFromTo(fromStack: Stack, toStack: Stack, character: Character, moves: MoveEvaluation[]): void {
+    for (const pile of [BodyPart.Head, BodyPart.Torso, BodyPart.Legs]) {
+      const cards = fromStack.getCardsFromPile(pile);
+      if (cards.length === 0) continue;
+
+      const topCard = cards[cards.length - 1];
+      if ((topCard.character === character || topCard.isWild()) && toStack.canAcceptCard(topCard, pile)) {
+        moves.push({
+          fromStack,
+          fromPile: pile,
+          toStack,
+          toPile: pile,
+          cardId: topCard.id,
+          card: topCard,
+          value: 200,
+          reasoning: `Consolidate ${character} pieces`,
+          createsCascade: false,
+          completesStack: this.wouldCompleteStack(toStack, topCard, pile),
+          disruptsOpponent: false,
+          type: 'organization'
+        });
+      }
+    }
+  }
+
+  /**
+   * Calculate how "pure" a stack is for a given character (0-1, higher is more pure)
+   */
+  private calculateStackPurity(stack: Stack, character: Character): number {
+    const topCards = stack.getTopCards();
+    const allCards = [topCards.head, topCards.torso, topCards.legs].filter(Boolean) as Card[];
+    
+    if (allCards.length === 0) return 0;
+    
+    let matchingCards = 0;
+    for (const card of allCards) {
+      const effectiveChar = this.getEffectiveCharacter(card);
+      if (effectiveChar === character) {
+        matchingCards++;
+      }
+    }
+    
+    return matchingCards / allCards.length;
   }
 
   /**
