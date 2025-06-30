@@ -1,15 +1,15 @@
 import { Player, MoveOptions } from './Player.js';
 import { PlayerStateType } from './PlayerState.js';
-import { Card, BodyPart } from './Card.js';
-import { Stack } from './Stack.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
 import { CardPlayEvaluator, isWildCardPlayOption } from './CardPlayEvaluator.js';
+import { MoveEvaluator } from './MoveEvaluator.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export class AIPlayer {
   private analyzer: GameStateAnalyzer;
   private cardPlayEvaluator: CardPlayEvaluator;
+  private moveEvaluator: MoveEvaluator;
 
   constructor(
     private readonly player: Player,
@@ -17,6 +17,7 @@ export class AIPlayer {
   ) {
     this.analyzer = new GameStateAnalyzer();
     this.cardPlayEvaluator = new CardPlayEvaluator();
+    this.moveEvaluator = new MoveEvaluator();
   }
 
   /**
@@ -160,134 +161,33 @@ export class AIPlayer {
    */
   private handleMoveCard(): void {
     const analysis = this.getGameAnalysis();
-    const move = this.selectBestMove(analysis);
+    const myStacks = this.player.getMyStacks();
+    const opponentStacks = this.player.getOpponentStacks();
     
-    if (move) {
-      console.log(`AI: Moving card ${move.cardId} strategically`);
-      this.player.moveCard(move);
+    // Use MoveEvaluator to find the best strategic move
+    const evaluations = this.moveEvaluator.evaluateAllMoves(myStacks, opponentStacks, analysis);
+    const bestMove = this.moveEvaluator.selectBestMove(evaluations);
+    
+    if (bestMove) {
+      const moveOptions: MoveOptions = {
+        cardId: bestMove.cardId,
+        fromStackId: bestMove.fromStack.getId(),
+        fromPile: bestMove.fromPile,
+        toStackId: bestMove.toStack?.getId(), // undefined means create new stack
+        toPile: bestMove.toPile
+      };
+      
+      const stackInfo = bestMove.toStack ? 
+        `to ${bestMove.toStack.getId()}` : 
+        'to new stack';
+      
+      console.log(`AI: Moving ${bestMove.card.toString()} ${stackInfo} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
+      this.player.moveCard(moveOptions);
     } else {
       console.warn('AI: No strategic moves found');
     }
   }
 
-  /**
-   * Select the best strategic move from available options
-   */
-  private selectBestMove(analysis: GameAnalysis): MoveOptions | null {
-    const myStacks = this.player.getMyStacks();
-    const opponentStacks = this.player.getOpponentStacks();
-    const allStacks = [...myStacks, ...opponentStacks];
-    
-    // Priority 1: Moves that complete own characters
-    for (const opportunity of analysis.completionOpportunities) {
-      const move = this.findMoveForCompletion(opportunity, allStacks);
-      if (move) return move;
-    }
-
-    // Priority 2: Moves that disrupt critical opponent completions
-    for (const disruption of analysis.disruptionOpportunities) {
-      if (disruption.urgency === 'critical') {
-        const move = this.findMoveForDisruption(disruption, allStacks);
-        if (move) return move;
-      }
-    }
-
-    // Priority 3: Any valid move that improves position
-    return this.findFirstValidMove(allStacks[0], allStacks);
-  }
-
-  /**
-   * Find a move that can complete a character
-   */
-  private findMoveForCompletion(opportunity: any, allStacks: Stack[]): MoveOptions | null {
-    // Look for cards that can be moved to complete the stack
-    for (const fromStack of allStacks) {
-      const cards = fromStack.getCardsFromPile(opportunity.neededCard);
-      if (cards.length > 0) {
-        const card = cards[cards.length - 1]; // Top card
-        if (card.character === opportunity.character || card.isWild()) {
-          const targetStack = allStacks.find(s => s.getId() === opportunity.stackId);
-          if (targetStack && targetStack.canAcceptCard(card, opportunity.neededCard)) {
-            return {
-              cardId: card.id,
-              fromStackId: fromStack.getId(),
-              fromPile: opportunity.neededCard,
-              toStackId: opportunity.stackId,
-              toPile: opportunity.neededCard
-            };
-          }
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Find a move that can disrupt opponent completion
-   */
-  private findMoveForDisruption(disruption: any, allStacks: Stack[]): MoveOptions | null {
-    // Look for cards that can be moved to disrupt the opponent
-    for (const fromStack of allStacks) {
-      const cards = fromStack.getCardsFromPile(disruption.targetPile);
-      if (cards.length > 0) {
-        const card = cards[cards.length - 1]; // Top card
-        const targetStack = allStacks.find(s => s.getId() === disruption.stackId);
-        if (targetStack && targetStack.canAcceptCard(card, disruption.targetPile)) {
-          return {
-            cardId: card.id,
-            fromStackId: fromStack.getId(),
-            fromPile: disruption.targetPile,
-            toStackId: disruption.stackId,
-            toPile: disruption.targetPile
-          };
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Find the first valid move from a given stack
-   */
-  private findFirstValidMove(fromStack: Stack, allStacks: Stack[]): MoveOptions | null {
-    const piles = [BodyPart.Head, BodyPart.Torso, BodyPart.Legs];
-    
-    for (const fromPile of piles) {
-      const cards = fromStack.getCardsFromPile(fromPile);
-      if (cards.length === 0) continue;
-
-      const topCard = cards[cards.length - 1];
-      
-      for (const toStack of allStacks) {
-        if (toStack.getId() === fromStack.getId()) continue;
-        
-        for (const toPile of piles) {
-          if (toStack.canAcceptCard(topCard, toPile)) {
-            return {
-              cardId: topCard.id,
-              fromStackId: fromStack.getId(),
-              fromPile: fromPile,
-              toStackId: toStack.getId(),
-              toPile: toPile
-            };
-          }
-        }
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Get missing body parts for a stack's top cards
-   */
-  private getMissingBodyParts(topCards: { head?: Card; torso?: Card; legs?: Card }): BodyPart[] {
-    const missing: BodyPart[] = [];
-    if (!topCards.head) missing.push(BodyPart.Head);
-    if (!topCards.torso) missing.push(BodyPart.Torso);
-    if (!topCards.legs) missing.push(BodyPart.Legs);
-    return missing;
-  }
 
   /**
    * Log game result when game is over

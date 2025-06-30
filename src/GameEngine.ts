@@ -165,15 +165,27 @@ export class GameEngine {
 
   playerMoveCard(playerId: string, options: MoveOptions): void {
     const fromStack = this.getStack(options.fromStackId);
-    const toStack = this.getStack(options.toStackId);
     
     if (!fromStack.hasCardInPile(options.cardId, options.fromPile)) {
       throw new Error('Card not found in specified pile');
     }
 
     const cardToMove = fromStack.getCardsFromPile(options.fromPile).find(c => c.id === options.cardId);
-    if (!cardToMove || !toStack.canAcceptCard(cardToMove, options.toPile)) {
-      throw new Error('Cannot place card in target pile');
+    if (!cardToMove) {
+      throw new Error('Card not found');
+    }
+
+    // Determine target stack - create new one if toStackId not provided
+    let toStack: Stack;
+    if (options.toStackId) {
+      toStack = this.getStack(options.toStackId);
+      if (!toStack.canAcceptCard(cardToMove, options.toPile)) {
+        throw new Error('Cannot place card in target pile');
+      }
+    } else {
+      // Create new stack for the player who owns the fromStack or the current player
+      const targetPlayerId = fromStack.getOwnerId();
+      toStack = this.createNewStack(targetPlayerId);
     }
 
     // Move the card
