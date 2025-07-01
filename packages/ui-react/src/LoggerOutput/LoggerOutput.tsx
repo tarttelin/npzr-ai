@@ -1,3 +1,4 @@
+/* eslint-env browser */
 import React, { useRef, useEffect, useState } from 'react';
 import { useLogger } from '../LoggerProvider';
 import './LoggerOutput.css';

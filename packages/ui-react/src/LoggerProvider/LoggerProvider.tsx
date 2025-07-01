@@ -1,3 +1,4 @@
+/* eslint-env browser */
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { BrowserLogStore, LogLevel, LOG_LEVELS } from '@npzr/logging';
 

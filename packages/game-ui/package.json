@@ -9,8 +9,8 @@
     "preview": "vite preview",
     "test": "echo \"No tests yet\" && exit 0",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/**/*.{ts,tsx}",
-    "lint:fix": "eslint src/**/*.{ts,tsx} --fix"
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix"
   },
   "keywords": [
     "npzr",

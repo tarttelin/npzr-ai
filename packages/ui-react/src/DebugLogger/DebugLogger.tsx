@@ -1,6 +1,6 @@
 import React from 'react';
 import { LoggerOutput } from '../LoggerOutput';
-import { LoggerProvider, useLogger } from '../LoggerProvider';
+import { LoggerProvider } from '../LoggerProvider';
 
 export interface DebugLoggerProps {
   isVisible?: boolean;
@@ -14,8 +14,6 @@ export interface DebugLoggerProps {
 
 // Internal component that uses the logger context
 const DebugLoggerContent: React.FC<Omit<DebugLoggerProps, 'isVisible' | 'onToggle'>> = (props) => {
-  const { setIsVisible } = useLogger();
-  
   return (
     <LoggerOutput
       {...props}
