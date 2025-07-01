@@ -1,5 +1,8 @@
 import winston from 'winston';
 
+// Detect browser environment
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -63,31 +66,38 @@ if (isDevelopment || isTest) {
   );
 }
 
-// Production file transports
+// Production transports - different for browser vs Node.js
 if (!isDevelopment && !isTest) {
-  // Error log file
-  transports.push(
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      format: winston.format.json()
-    })
-  );
-  
-  // Combined log file
-  transports.push(
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-      format: winston.format.json()
-    })
-  );
-  
-  // Console for production monitoring
-  transports.push(
-    new winston.transports.Console({
-      format: winston.format.json()
-    })
-  );
+  if (isBrowser) {
+    // Browser environment - only console logging (browser logger will handle the debug UI separately)
+    transports.push(
+      new winston.transports.Console({
+        format: winston.format.json()
+      })
+    );
+  } else {
+    // Node.js environment - use file transports
+    transports.push(
+      new winston.transports.File({
+        filename: 'logs/error.log',
+        level: 'error',
+        format: winston.format.json()
+      })
+    );
+    
+    transports.push(
+      new winston.transports.File({
+        filename: 'logs/combined.log',
+        format: winston.format.json()
+      })
+    );
+    
+    transports.push(
+      new winston.transports.Console({
+        format: winston.format.json()
+      })
+    );
+  }
 }
 
 const logger = winston.createLogger({

@@ -24,5 +24,8 @@ export {
 // Logger utility
 export { default as logger } from './utils/logger.js';
 
+// Browser debug logger (only available in browser environment)
+export { initializeBrowserDebugLogger, BrowserDebugLogger } from './utils/browserLogger.js';
+
 // Main entry point
 export { GameEngine as default } from './GameEngine.js';

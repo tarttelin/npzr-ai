@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPZR Browser Debug Logger Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        .control-group {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 5px;
+        }
+        .keyboard-shortcut {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #4a9eff;
+        }
+        .feature-list {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .feature-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 NPZR Browser Debug Logger Demo</h1>
+        
+        <div class="keyboard-shortcut">
+            <strong>🎹 Keyboard Shortcut:</strong> Press <code>Ctrl+Shift+L</code> to toggle the debug logger!
+        </div>
+
+        <div class="feature-list">
+            <h3>🔧 Debug Logger Features:</h3>
+            <ul>
+                <li><strong>Toggle Visibility:</strong> Show/hide the debug console</li>
+                <li><strong>Log Level Filtering:</strong> Debug, Info, Warn, Error levels</li>
+                <li><strong>Auto-scroll:</strong> Automatically scroll to newest logs</li>
+                <li><strong>Clear Logs:</strong> Clear all logged messages</li>
+                <li><strong>Real-time Updates:</strong> See logs as they happen</li>
+                <li><strong>Color-coded Levels:</strong> Visual indicators for different log types</li>
+            </ul>
+        </div>
+
+        <h2>🧪 Test the Logger</h2>
+        
+        <div class="control-group">
+            <h3>Manual Controls:</h3>
+            <button onclick="toggleDebugLogger()">🔍 Toggle Debug Logger</button>
+            <button onclick="clearAllLogs()">🗑️ Clear All Logs</button>
+        </div>
+
+        <div class="control-group">
+            <h3>Generate Test Logs:</h3>
+            <button onclick="logInfo()">ℹ️ Log Info</button>
+            <button onclick="logWarning()">⚠️ Log Warning</button>
+            <button onclick="logError()">❌ Log Error</button>
+            <button onclick="logDebug()">🐛 Log Debug</button>
+        </div>
+
+        <div class="control-group">
+            <h3>Simulate Game Events:</h3>
+            <button onclick="simulateGameStart()">🎮 Game Start</button>
+            <button onclick="simulateAIMove()">🤖 AI Move</button>
+            <button onclick="simulatePlayerAction()">👤 Player Action</button>
+            <button onclick="simulateGameEnd()">🏁 Game End</button>
+        </div>
+
+        <div class="control-group">
+            <h3>Stress Test:</h3>
+            <button onclick="generateManyLogs()">📊 Generate 50 Logs</button>
+            <button onclick="generateSlowLogs()">⏱️ Generate Logs Over Time</button>
+        </div>
+
+        <h2>📖 Usage in Your Game</h2>
+        <div class="feature-list">
+            <h3>How to integrate into your NPZR game:</h3>
+            <pre><code>import { logger, initializeBrowserDebugLogger } from 'npzr-game-engine';
+
+// Initialize the debug logger (call once when your game starts)
+const debugLogger = initializeBrowserDebugLogger();
+
+// Use logger throughout your game
+logger.info('Game started', { players: 2, difficulty: 'hard' });
+logger.warn('Player took too long', { timeRemaining: 5 });
+logger.error('Invalid move attempted', { move: 'invalid', reason: 'card not in hand' });
+logger.debug('AI thinking', { depth: 3, options: 12 });
+
+// Players can toggle debug view with Ctrl+Shift+L
+// Or programmatically:
+debugLogger.show();  // Show debug logger
+debugLogger.hide();  // Hide debug logger
+debugLogger.toggle(); // Toggle visibility</code></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        // Simulate the NPZR logger (in real usage, this would be imported)
+        let debugLoggerInstance = null;
+        let logCount = 0;
+
+        // Simple logger simulation for demo
+        const logger = {
+            info: (message, meta) => addLogToStore('info', message, meta),
+            warn: (message, meta) => addLogToStore('warn', message, meta),
+            error: (message, meta) => addLogToStore('error', message, meta),
+            debug: (message, meta) => addLogToStore('debug', message, meta)
+        };
+
+        // Simulate the browser debug logger functionality
+        function initializeBrowserDebugLogger() {
+            if (debugLoggerInstance) return debugLoggerInstance;
+
+            // Create the debug UI (simplified version)
+            const container = document.createElement('div');
+            container.id = 'npzr-debug-logger';
+            container.style.cssText = `
+                position: fixed; top: 10px; right: 10px; width: 600px; height: 400px;
+                background: #1e1e1e; border: 2px solid #333; border-radius: 8px;
+                font-family: 'Courier New', monospace; z-index: 10000; display: none;
+                flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            `;
+
+            const header = document.createElement('div');
+            header.style.cssText = `
+                background: #2d2d2d; padding: 8px 12px; border-bottom: 1px solid #333;
+                display: flex; align-items: center; gap: 10px; font-size: 12px;
+                color: #fff; border-radius: 6px 6px 0 0;
+            `;
+
+            const title = document.createElement('span');
+            title.textContent = 'NPZR Debug Logs';
+            title.style.cssText = 'font-weight: bold; flex: 1;';
+
+            const levelSelect = document.createElement('select');
+            levelSelect.style.cssText = `
+                background: #333; color: #fff; border: 1px solid #555;
+                padding: 2px 6px; border-radius: 3px; font-size: 11px;
+            `;
+            levelSelect.innerHTML = `
+                <option value="debug">Debug</option>
+                <option value="info" selected>Info</option>
+                <option value="warn">Warn</option>
+                <option value="error">Error</option>
+            `;
+
+            const autoScrollBtn = document.createElement('button');
+            autoScrollBtn.textContent = '📜 Auto-scroll';
+            autoScrollBtn.style.cssText = `
+                background: #4a9eff; color: white; border: none; padding: 4px 8px;
+                border-radius: 3px; font-size: 11px; cursor: pointer;
+            `;
+
+            const clearBtn = document.createElement('button');
+            clearBtn.textContent = '🗑️ Clear';
+            clearBtn.style.cssText = `
+                background: #ff6b6b; color: white; border: none; padding: 4px 8px;
+                border-radius: 3px; font-size: 11px; cursor: pointer;
+            `;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = `
+                background: #666; color: white; border: none; padding: 4px 8px;
+                border-radius: 3px; font-size: 11px; cursor: pointer; margin-left: 5px;
+            `;
+
+            const textarea = document.createElement('textarea');
+            textarea.readOnly = true;
+            textarea.style.cssText = `
+                flex: 1; background: #1e1e1e; color: #d4d4d4; border: none;
+                padding: 10px; font-family: 'Courier New', monospace; font-size: 11px;
+                line-height: 1.4; resize: none; outline: none; white-space: pre;
+            `;
+
+            header.appendChild(title);
+            header.appendChild(levelSelect);
+            header.appendChild(autoScrollBtn);
+            header.appendChild(clearBtn);
+            header.appendChild(closeBtn);
+
+            container.appendChild(header);
+            container.appendChild(textarea);
+            document.body.appendChild(container);
+
+            let isVisible = false;
+            let autoScroll = true;
+            let currentLevel = 'info';
+            const levels = { error: 0, warn: 1, info: 2, debug: 4 };
+
+            const updateDisplay = () => {
+                if (!isVisible) return;
+                const logs = getStoredLogs();
+                const filteredLogs = logs.filter(log => {
+                    const logLevel = levels[log.level] ?? 0;
+                    const currentLevelValue = levels[currentLevel] ?? 0;
+                    return logLevel <= currentLevelValue;
+                });
+
+                const logText = filteredLogs
+                    .map(log => {
+                        const levelIcon = {
+                            error: '🔴', warn: '🟡', info: '🔵', debug: '🟣'
+                        }[log.level] || '⚪';
+                        const metaText = log.meta ? ` ${JSON.stringify(log.meta)}` : '';
+                        return `[${log.timestamp}] ${levelIcon} ${log.level.toUpperCase()}: ${log.message}${metaText}`;
+                    })
+                    .join('\n');
+
+                textarea.value = logText;
+                if (autoScroll) {
+                    textarea.scrollTop = textarea.scrollHeight;
+                }
+            };
+
+            levelSelect.addEventListener('change', (e) => {
+                currentLevel = e.target.value;
+                updateDisplay();
+            });
+
+            autoScrollBtn.addEventListener('click', () => {
+                autoScroll = !autoScroll;
+                autoScrollBtn.style.background = autoScroll ? '#4a9eff' : '#666';
+                autoScrollBtn.textContent = autoScroll ? '📜 Auto-scroll' : '📜 Manual';
+            });
+
+            clearBtn.addEventListener('click', () => {
+                clearStoredLogs();
+                updateDisplay();
+            });
+
+            closeBtn.addEventListener('click', () => {
+                container.style.display = 'none';
+                isVisible = false;
+            });
+
+            debugLoggerInstance = {
+                show: () => {
+                    container.style.display = 'flex';
+                    isVisible = true;
+                    updateDisplay();
+                },
+                hide: () => {
+                    container.style.display = 'none';
+                    isVisible = false;
+                },
+                toggle: () => {
+                    if (isVisible) {
+                        debugLoggerInstance.hide();
+                    } else {
+                        debugLoggerInstance.show();
+                    }
+                },
+                updateDisplay
+            };
+
+            // Add keyboard shortcut
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+                    e.preventDefault();
+                    debugLoggerInstance.toggle();
+                }
+            });
+
+            return debugLoggerInstance;
+        }
+
+        // Log storage simulation
+        let logStore = [];
+        const maxLogs = 1000;
+
+        function addLogToStore(level, message, meta) {
+            const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            logStore.push({ timestamp, level, message, meta });
+            
+            if (logStore.length > maxLogs) {
+                logStore = logStore.slice(-maxLogs);
+            }
+            
+            if (debugLoggerInstance) {
+                debugLoggerInstance.updateDisplay();
+            }
+        }
+
+        function getStoredLogs() {
+            return [...logStore];
+        }
+
+        function clearStoredLogs() {
+            logStore = [];
+        }
+
+        // Initialize the debug logger
+        initializeBrowserDebugLogger();
+
+        // Make functions global for buttons
+        window.toggleDebugLogger = () => debugLoggerInstance?.toggle();
+        window.clearAllLogs = () => {
+            clearStoredLogs();
+            debugLoggerInstance?.updateDisplay();
+        };
+
+        window.logInfo = () => logger.info(`Test info message ${++logCount}`, { testId: logCount, type: 'manual' });
+        window.logWarning = () => logger.warn(`Test warning message ${++logCount}`, { testId: logCount, severity: 'medium' });
+        window.logError = () => logger.error(`Test error message ${++logCount}`, { testId: logCount, critical: true });
+        window.logDebug = () => logger.debug(`Test debug message ${++logCount}`, { testId: logCount, verbose: true });
+
+        window.simulateGameStart = () => {
+            logger.info('Game initialized', { players: 2, gameMode: 'classic', difficulty: 'hard' });
+            logger.debug('Deck shuffled', { cardCount: 44, seed: Math.random() });
+            logger.info('Players assigned', { human: 'Player1', ai: 'Hard AI' });
+        };
+
+        window.simulateAIMove = () => {
+            const moves = ['play_card', 'move_card', 'nominate_wild'];
+            const move = moves[Math.floor(Math.random() * moves.length)];
+            logger.info(`AI (🔥 Hard): ${move}`, { 
+                action: move, 
+                difficulty: 'hard', 
+                reasoning: 'Strategic advantage', 
+                value: Math.floor(Math.random() * 1000) 
+            });
+        };
+
+        window.simulatePlayerAction = () => {
+            const actions = ['card_played', 'stack_completed', 'wild_nominated'];
+            const action = actions[Math.floor(Math.random() * actions.length)];
+            logger.info(`Player action: ${action}`, { action, player: 'human', timestamp: Date.now() });
+        };
+
+        window.simulateGameEnd = () => {
+            logger.info('Game completed', { winner: 'AI', score: { human: 2, ai: 3 }, duration: '5:23' });
+            logger.debug('Game statistics', { totalMoves: 47, averageThinkTime: 1.2, difficulty: 'hard' });
+        };
+
+        window.generateManyLogs = () => {
+            for (let i = 0; i < 50; i++) {
+                const levels = ['info', 'warn', 'error', 'debug'];
+                const level = levels[Math.floor(Math.random() * levels.length)];
+                logger[level](`Bulk log message ${i + 1}`, { 
+                    bulkId: i + 1, 
+                    timestamp: Date.now(), 
+                    random: Math.random() 
+                });
+            }
+        };
+
+        window.generateSlowLogs = () => {
+            let count = 0;
+            const interval = setInterval(() => {
+                logger.info(`Timed log ${++count}`, { sequence: count, interval: 500 });
+                if (count >= 10) {
+                    clearInterval(interval);
+                    logger.info('Timed logging complete', { totalLogs: count });
+                }
+            }, 500);
+        };
+
+        // Generate some initial logs
+        logger.info('Browser Debug Logger Demo loaded', { timestamp: Date.now() });
+        logger.debug('Demo initialization complete', { features: ['toggle', 'filter', 'clear', 'autoscroll'] });
+    </script>
+</body>
+</html>
