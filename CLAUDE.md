@@ -4,7 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **NPZR Game Engine** - a TypeScript monorepo implementation of the Ninja Pirate Zombie Robot card game. The project provides a complete ecosystem including pure game logic, AI intelligence, React UI components, and browser-based debugging tools, featuring a 44-card tactical game system with wild cards, stack management, and AI-driven opponent disruption mechanics.
+This is the **NPZR Game Engine** - a complete TypeScript implementation of the Ninja Pirate Zombie Robot card game. NPZR is a tactical card game where players build characters (Ninja, Pirate, Zombie, Robot) by collecting body parts (head, torso, legs) while strategically disrupting opponents.
+
+### What NPZR Is
+- **44-card tactical game**: 36 character cards + 8 wild cards
+- **Character building**: Collect matching head/torso/legs to complete characters
+- **Strategic disruption**: Place different characters on opponent stacks to disrupt their progress
+- **Wild card mechanics**: Flexible cards that can be nominated as any character/body part
+- **AI opponent**: Intelligent computer player with difficulty levels and sophisticated strategy
+
+### Project Scope
+The monorepo provides a complete game ecosystem:
+- **Pure game logic** (@npzr/core) - Rules, mechanics, game state management
+- **AI intelligence** (@npzr/ai) - Strategic opponent with disruption tactics
+- **React UI components** (@npzr/ui-react) - Reusable game interface components  
+- **Browser debugging** (@npzr/logging) - Development and debugging tools
+- **Complete game app** (@npzr/game-ui) - Playable game interface
 
 ## Development Commands
 
@@ -36,6 +51,31 @@ jest src/AIPlayer.test.ts --workspace=@npzr/ai  # Run specific test file
 npm run lint:fix --workspaces     # Auto-fix ESLint issues across all packages
 npm run typecheck --workspaces    # Type check all packages
 ```
+
+## Game Rules & Mechanics
+
+### NPZR Game Overview
+Players compete to complete character sets while disrupting opponents. Each character needs matching head, torso, and legs to score points.
+
+### Core Game Mechanics
+- **Characters**: Ninja, Pirate, Zombie, Robot (4 types)
+- **Body Parts**: Head, Torso, Legs (3 per character)
+- **Deck Composition**: 36 regular cards (3 copies × 4 characters × 3 body parts) + 8 wild cards
+- **Stacks**: Each player has multiple stacks (areas) to build characters
+- **Defensive Play**: Players can place cards on opponent stacks to disrupt completion
+
+### Wild Card System
+- **Character Wilds**: Can be any body part for a specific character
+- **Position Wilds**: Can be any character for a specific body part  
+- **Universal Wilds**: Can be any character and any body part
+- **Nomination**: Wild cards must be nominated when played (specify character/part)
+- **Re-nomination**: Cards become wild again when moved to different stacks
+
+### Winning Strategy
+- **Complete Characters**: Get matching head/torso/legs for same character
+- **Disrupt Opponents**: Place different characters on their existing pieces
+- **Stack Management**: Build multiple stacks simultaneously for flexibility
+- **Wild Card Optimization**: Use wilds strategically for maximum advantage
 
 ## Architecture Overview
 
@@ -70,30 +110,27 @@ The engine follows a **layered monorepo architecture** with domain-driven design
 - **Game phases**: Setup → playing → finished with turn-based mechanics
 
 #### 2. AI Intelligence System (@npzr/ai)
-- **AIPlayer**: Main AI controller with difficulty levels and strategic decision-making
-- **CardPlayEvaluator**: Unified wild card placement+nomination evaluation (eliminates coordination blindness)
-- **GameStateAnalyzer**: Strategic analysis of game state, opportunities, and threats
-- **DifficultyManager**: Configurable AI skill levels with strategic randomization
-- **Disruption Strategy**: AI actively disrupts opponent progress instead of helping completion
+- **AIPlayer**: Main AI controller implementing sophisticated game strategy
+- **Strategic Decision Making**: Evaluates all possible moves and selects optimal plays
+- **Disruption Strategy**: Actively disrupts opponent progress by targeting existing pieces
+- **Wild Card Mastery**: Unified evaluation of placement + nomination for optimal advantage
+- **Difficulty Levels**: Easy/Medium/Hard with appropriate strategic randomization
+- **GameStateAnalyzer**: Comprehensive analysis of threats, opportunities, and game state
+- **CardPlayEvaluator**: Eliminates coordination blindness in wild card decisions
 
-#### 3. Logging System (@npzr/logging)
-- **Environment-aware logger**: Console output for Node.js, browser debugging for web
-- **BrowserLogStore**: In-memory log storage with React integration
-- **Simple architecture**: No external dependencies, winston-free implementation
-- **Cross-platform**: Works in Node.js tests, browser applications, and React components
+#### 3. Game Logic Implementation
+- **Turn Management**: Player turns, card drawing, win condition checking
+- **Stack Completion**: Detects when head/torso/legs match for scoring
+- **Wild Card Nomination**: Tracks nominations and handles re-nomination when moved
+- **Defensive Mechanics**: Allows placement on opponent stacks for disruption
+- **Game State Validation**: Ensures consistent state and valid moves
+- **Card Management**: Deck shuffling, hand limits, card distribution
 
-#### 4. React UI Components (@npzr/ui-react)
-- **LoggerProvider**: React Context for managing logging state across components
-- **LoggerOutput**: Toggleable textarea component with filtering and auto-scroll
-- **DebugLogger**: Backward-compatible wrapper component
-- **useLogger hook**: Context hook for accessing logging functionality
-- **Browser integration**: Subscribes to BrowserLogStore for real-time log updates
-
-#### 5. Game Application (@npzr/game-ui)
-- **Complete game interface**: React-based UI for playing NPZR
-- **Debug integration**: Built-in logger with Ctrl+Shift+L toggle
-- **Vite-powered**: Fast development and optimized production builds
-- **Skeleton implementation**: Ready for game UI expansion
+#### 4. Development & UI Support (@npzr/ui-react, @npzr/logging, @npzr/game-ui)
+- **React Components**: Reusable UI components for game interfaces
+- **Debug Tools**: Browser-based logging with real-time updates
+- **Development Environment**: Hot reloading, TypeScript support, testing framework
+- **Game Application**: Complete playable interface with debug integration
 
 ### Package Dependency Flow
 
@@ -134,30 +171,30 @@ The engine follows a **layered monorepo architecture** with domain-driven design
 
 ## Recent Major Improvements
 
-### Monorepo Architecture Migration
-**Problem**: Monolithic codebase made it difficult to separate UI from game logic  
-**Solution**: Migrated to npm workspaces with clear package boundaries  
-**Result**: Clean separation allowing independent development of game logic, AI, UI, and logging
-
-### React-Based Logging System
-**Problem**: DOM manipulation logging system was hard to integrate with React  
-**Solution**: Created LoggerProvider context with React components for debugging  
-**Result**: Seamless React integration with real-time log updates and toggleable UI
-
-### Winston-Free Logging Implementation
-**Problem**: Winston dependency caused browser compatibility issues  
-**Solution**: Replaced with simple console-based logger and BrowserLogStore  
-**Result**: Zero external dependencies, works in Node.js and browser environments
-
 ### Unified Wild Card System (Issue #12)
 **Problem**: Separation of card selection and wild card nomination caused "coordination blindness"  
 **Solution**: Created unified `CardPlayEvaluator` system that evaluates all placement+nomination combinations together  
-**Result**: Optimal wild card usage with coordinated strategic decisions
+**Result**: Optimal wild card usage with coordinated strategic decisions - AI now makes sophisticated wild card plays
 
 ### AI Difficulty Levels (Issue #14)
 **Problem**: AI was too predictable and always played optimally  
-**Solution**: Implemented DifficultyManager with strategic randomization  
-**Result**: Easy/Medium/Hard difficulty levels with appropriate challenge scaling
+**Solution**: Implemented DifficultyManager with strategic randomization and skill scaling  
+**Result**: Easy/Medium/Hard difficulty levels providing appropriate challenge for different skill levels
+
+### Corrected Disruption Strategy
+**Problem**: AI was inadvertently helping opponents complete characters instead of disrupting them  
+**Solution**: Fixed `findDisruptionOpportunities()` to target existing pieces for disruption  
+**Result**: AI now properly disrupts opponents by placing different characters on their existing pieces
+
+### Monorepo Architecture Migration
+**Problem**: Monolithic codebase made it difficult to separate concerns and enable independent development  
+**Solution**: Migrated to npm workspaces with clear package boundaries (@npzr/core, @npzr/ai, etc.)  
+**Result**: Clean separation enabling independent development of game logic, AI strategy, and UI components
+
+### Enhanced Testing Coverage
+**Problem**: Limited test coverage made refactoring risky  
+**Solution**: Expanded test suites across all packages with comprehensive AI behavior testing  
+**Result**: 117 tests providing confidence in game logic, AI decisions, and cross-package integration
 
 ## Important Game Logic Concepts
 
