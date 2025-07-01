@@ -7,7 +7,6 @@ export interface DifficultyConfig {
   level: 'easy' | 'medium' | 'hard';
   wildCardConservation: number; // 0.0-1.0 (probability of saving wilds)
   disruptionAggression: number; // 0.0-1.0 (likelihood to disrupt opponent)
-  planningDepth: number; // 1-3 (turns to look ahead)
   mistakeRate: number; // 0.0-0.3 (probability of suboptimal moves)
   cascadeOptimization: boolean; // Whether to optimize multi-move sequences
 }
@@ -17,7 +16,6 @@ export class DifficultyManager {
     level: 'easy',
     wildCardConservation: 0.2,
     disruptionAggression: 0.1,
-    planningDepth: 1,
     mistakeRate: 0.2,
     cascadeOptimization: false
   };
@@ -26,7 +24,6 @@ export class DifficultyManager {
     level: 'medium',
     wildCardConservation: 0.6,
     disruptionAggression: 0.5,
-    planningDepth: 2,
     mistakeRate: 0.1,
     cascadeOptimization: true
   };
@@ -35,7 +32,6 @@ export class DifficultyManager {
     level: 'hard',
     wildCardConservation: 0.9,
     disruptionAggression: 0.8,
-    planningDepth: 3,
     mistakeRate: 0.02,
     cascadeOptimization: true
   };

@@ -19,7 +19,6 @@ describe('DifficultyManager', () => {
       expect(config.level).toBe('easy');
       expect(config.wildCardConservation).toBe(0.2);
       expect(config.disruptionAggression).toBe(0.1);
-      expect(config.planningDepth).toBe(1);
       expect(config.mistakeRate).toBe(0.2);
       expect(config.cascadeOptimization).toBe(false);
     });
@@ -30,7 +29,6 @@ describe('DifficultyManager', () => {
       expect(config.level).toBe('medium');
       expect(config.wildCardConservation).toBe(0.6);
       expect(config.disruptionAggression).toBe(0.5);
-      expect(config.planningDepth).toBe(2);
       expect(config.mistakeRate).toBe(0.1);
       expect(config.cascadeOptimization).toBe(true);
     });
@@ -41,7 +39,6 @@ describe('DifficultyManager', () => {
       expect(config.level).toBe('hard');
       expect(config.wildCardConservation).toBe(0.9);
       expect(config.disruptionAggression).toBe(0.8);
-      expect(config.planningDepth).toBe(3);
       expect(config.mistakeRate).toBe(0.02);
       expect(config.cascadeOptimization).toBe(true);
     });
