@@ -8,6 +8,7 @@ export { PlayerState, PlayerStateType, Action } from './PlayerState.js';
 export { Player, PlayCardOptions, MoveOptions, Position } from './Player.js';
 export { GameEngine } from './GameEngine.js';
 export { AIPlayer, Difficulty } from './AIPlayer.js';
+export { DifficultyManager, DifficultyConfig } from './DifficultyManager.js';
 export { MoveEvaluator, MoveEvaluation } from './MoveEvaluator.js';
 export { 
   GameStateAnalyzer, 

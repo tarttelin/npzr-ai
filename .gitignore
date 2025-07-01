@@ -54,3 +54,6 @@ pids/
 # Temporary folders
 tmp/
 temp/
+
+# Image source files
+*.tif
