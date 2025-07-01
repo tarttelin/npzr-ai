@@ -21,5 +21,8 @@ export {
   GamePhase
 } from './GameStateAnalyzer.js';
 
+// Logger utility
+export { default as logger } from './utils/logger.js';
+
 // Main entry point
 export { GameEngine as default } from './GameEngine.js';

@@ -4,6 +4,7 @@ import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
 import { CardPlayEvaluator, isWildCardPlayOption } from './CardPlayEvaluator.js';
 import { MoveEvaluator } from './MoveEvaluator.js';
 import { DifficultyManager, DifficultyConfig } from './DifficultyManager.js';
+import logger from './utils/logger.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -56,10 +57,15 @@ export class AIPlayer {
           this.logGameResult();
           break;
         default:
-          console.warn(`AIPlayer: Unknown state ${currentState}`);
+          logger.warn(`AIPlayer: Unknown state ${currentState}`, { state: currentState, action: 'makeMove' });
       }
     } catch (error) {
-      console.error(`AIPlayer error in state ${currentState}:`, error);
+      logger.error(`AIPlayer error in state ${currentState}`, { 
+        state: currentState, 
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        action: 'makeMove'
+      });
     }
   }
 
@@ -97,7 +103,7 @@ export class AIPlayer {
    * Handle DRAW_CARD state - always draw when required
    */
   private handleDrawCard(): void {
-    console.log('AI: Drawing card');
+    logger.info('AI: Drawing card', { action: 'draw_card', difficulty: this.difficulty });
     this.player.drawCard();
   }
 
@@ -109,7 +115,7 @@ export class AIPlayer {
     const cards = hand.getCards();
     
     if (cards.length === 0) {
-      console.warn('AI: No cards in hand to play');
+      logger.warn('AI: No cards in hand to play', { action: 'play_card', handSize: 0, difficulty: this.difficulty });
       return;
     }
 
@@ -129,7 +135,7 @@ export class AIPlayer {
     const bestPlay = this.cardPlayEvaluator.selectBestPlay(difficultyAdjustedEvaluations);
     
     if (!bestPlay) {
-      console.warn('AI: No valid plays found');
+      logger.warn('AI: No valid plays found', { action: 'play_card', difficulty: this.difficulty });
       return;
     }
     
@@ -138,7 +144,16 @@ export class AIPlayer {
     
     if (isWildCardPlayOption(bestPlay)) {
       // Wild card: execute placement + nomination in one coordinated decision
-      console.log(`AI (${difficultyIndicator}): Playing wild card ${bestPlay.card.toString()} to ${bestPlay.placement.targetPile} as ${bestPlay.nomination.character} ${bestPlay.nomination.bodyPart} - ${bestPlay.reasoning} (combined value: ${bestPlay.combinedValue})`);
+      logger.info(`AI (${difficultyIndicator}): Playing wild card ${bestPlay.card.toString()} to ${bestPlay.placement.targetPile} as ${bestPlay.nomination.character} ${bestPlay.nomination.bodyPart} - ${bestPlay.reasoning} (combined value: ${bestPlay.combinedValue})`, {
+        action: 'play_card',
+        cardType: 'wild',
+        difficulty: this.difficulty,
+        cardId: bestPlay.card.id,
+        targetPile: bestPlay.placement.targetPile,
+        nomination: { character: bestPlay.nomination.character, bodyPart: bestPlay.nomination.bodyPart },
+        value: bestPlay.combinedValue,
+        reasoning: bestPlay.reasoning
+      });
       
       // Play the card
       this.player.playCard(bestPlay.card, bestPlay.placement);
@@ -150,7 +165,15 @@ export class AIPlayer {
       });
     } else {
       // Regular card: just place it
-      console.log(`AI (${difficultyIndicator}): Playing ${bestPlay.card.toString()} - ${bestPlay.reasoning} (value: ${bestPlay.value}, type: ${bestPlay.type})`);
+      logger.info(`AI (${difficultyIndicator}): Playing ${bestPlay.card.toString()} - ${bestPlay.reasoning} (value: ${bestPlay.value}, type: ${bestPlay.type})`, {
+        action: 'play_card',
+        cardType: 'regular',
+        difficulty: this.difficulty,
+        cardId: bestPlay.card.id,
+        value: bestPlay.value,
+        type: bestPlay.type,
+        reasoning: bestPlay.reasoning
+      });
       this.player.playCard(bestPlay.card, bestPlay.placement);
     }
   }
@@ -160,7 +183,11 @@ export class AIPlayer {
    * Handle NOMINATE_WILD state - should not be reached with unified system
    */
   private handleNominateWild(): void {
-    console.error('AI: NOMINATE_WILD state reached - this indicates an implementation error. Wild cards should be handled in PLAY_CARD phase with unified system.');
+    logger.error('AI: NOMINATE_WILD state reached - this indicates an implementation error. Wild cards should be handled in PLAY_CARD phase with unified system.', {
+      action: 'nominate_wild',
+      difficulty: this.difficulty,
+      error: 'unexpected_state'
+    });
   }
 
   /**
@@ -193,10 +220,19 @@ export class AIPlayer {
         'to new stack';
       
       const difficultyIndicator = this.getDifficultyIndicator();
-      console.log(`AI (${difficultyIndicator}): Moving ${bestMove.card.toString()} ${stackInfo} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
+      logger.info(`AI (${difficultyIndicator}): Moving ${bestMove.card.toString()} ${stackInfo} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`, {
+        action: 'move_card',
+        difficulty: this.difficulty,
+        cardId: bestMove.cardId,
+        fromStack: bestMove.fromStack.getId(),
+        toStack: bestMove.toStack?.getId(),
+        value: bestMove.value,
+        type: bestMove.type,
+        reasoning: bestMove.reasoning
+      });
       this.player.moveCard(moveOptions);
     } else {
-      console.warn('AI: No strategic moves found');
+      logger.warn('AI: No strategic moves found', { action: 'move_card', difficulty: this.difficulty });
     }
   }
 
@@ -243,6 +279,10 @@ export class AIPlayer {
   private logGameResult(): void {
     const state = this.player.getState();
     const difficultyIndicator = this.getDifficultyIndicator();
-    console.log(`AI (${difficultyIndicator}): Game over - ${state.getMessage()}`);
+    logger.info(`AI (${difficultyIndicator}): Game over - ${state.getMessage()}`, {
+      action: 'game_over',
+      difficulty: this.difficulty,
+      message: state.getMessage()
+    });
   }
 }

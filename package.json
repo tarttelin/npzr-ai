@@ -4,16 +4,22 @@
   "description": "TypeScript game rules engine for Ninja Pirate Zombie Robot (NPZR) card game",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "build": "NODE_ENV=production tsc",
+    "test": "NODE_ENV=test jest",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "test:coverage": "NODE_ENV=test jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "typecheck": "tsc --noEmit",
-    "dev": "ts-node src/index.ts"
+    "dev": "NODE_ENV=development ts-node src/index.ts",
+    "start": "NODE_ENV=production node dist/index.js"
   },
-  "keywords": ["card-game", "typescript", "game-engine", "npzr"],
+  "keywords": [
+    "card-game",
+    "typescript",
+    "game-engine",
+    "npzr"
+  ],
   "author": "npzr-ai",
   "license": "MIT",
   "devDependencies": {
@@ -26,5 +32,8 @@
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.2.0"
+  },
+  "dependencies": {
+    "winston": "^3.17.0"
   }
 }

@@ -3,6 +3,7 @@ import { Character, BodyPart } from './Card.js';
 import { PlayerStateType } from './PlayerState.js';
 import { Player } from './Player.js';
 import { Card } from './Card.js';
+import logger from './utils/logger.js';
 
 // Test helper function to put a specific card on top of the deck
 function putCardOnTopOfDeck(engine: GameEngine, character: Character, bodyPart: BodyPart): boolean {
@@ -326,7 +327,7 @@ describe('NPZR Game Engine Integration Test', () => {
       toPile: BodyPart.Head});
     expect(james.isMyTurn()).toBeFalsy()
     
-    console.log('End-to-end test completed successfully!');
+    logger.info('End-to-end test completed successfully!', { test: 'integration', action: 'test_complete' });
   });
 
   test('should allow wild card continuation after move phase', () => {
