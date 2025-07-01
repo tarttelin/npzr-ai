@@ -196,8 +196,8 @@ describe('AIPlayer Move Coordination', () => {
 
       aiPlayer.makeMove();
 
-      // Verify console logging includes strategic information
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/AI: Moving .+ - .+ \(value: \d+, type: \w+\)/));
+      // Verify console logging includes strategic information with difficulty indicator
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/AI \(.+\): Moving .+ - .+ \(value: \d+, type: \w+\)/));
     });
 
     test('should log different message formats for different move types', () => {

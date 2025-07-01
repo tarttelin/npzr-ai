@@ -3,6 +3,7 @@ import { PlayerStateType } from './PlayerState.js';
 import { GameStateAnalyzer, GameAnalysis } from './GameStateAnalyzer.js';
 import { CardPlayEvaluator, isWildCardPlayOption } from './CardPlayEvaluator.js';
 import { MoveEvaluator } from './MoveEvaluator.js';
+import { DifficultyManager, DifficultyConfig } from './DifficultyManager.js';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -10,6 +11,8 @@ export class AIPlayer {
   private analyzer: GameStateAnalyzer;
   private cardPlayEvaluator: CardPlayEvaluator;
   private moveEvaluator: MoveEvaluator;
+  private difficultyManager: DifficultyManager;
+  private difficultyConfig: DifficultyConfig;
 
   constructor(
     private readonly player: Player,
@@ -18,6 +21,8 @@ export class AIPlayer {
     this.analyzer = new GameStateAnalyzer();
     this.cardPlayEvaluator = new CardPlayEvaluator();
     this.moveEvaluator = new MoveEvaluator();
+    this.difficultyManager = new DifficultyManager();
+    this.difficultyConfig = this.difficultyManager.getConfig(difficulty);
   }
 
   /**
@@ -87,13 +92,6 @@ export class AIPlayer {
     );
   }
 
-  /**
-   * Enhanced strategy information using game state analysis
-   */
-  getStrategy(): string {
-    const analysis = this.getGameAnalysis();
-    return this.analyzer.getAnalysisSummary(analysis);
-  }
 
   /**
    * Handle DRAW_CARD state - always draw when required
@@ -104,7 +102,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle PLAY_CARD state - intelligently select and play card using unified evaluation
+   * Handle PLAY_CARD state - intelligently select and play card using unified evaluation with difficulty
    */
   private handlePlayCard(): void {
     const hand = this.player.getHand();
@@ -119,19 +117,28 @@ export class AIPlayer {
     const myStacks = this.player.getMyStacks();
     const opponentStacks = this.player.getOpponentStacks();
     
+    // Apply difficulty-based wild card conservation
+    const availableCards = this.difficultyManager.adjustWildCardStrategy(cards, this.difficultyConfig);
+    
     // Use unified CardPlayEvaluator for optimal placement+nomination coordination
-    const evaluations = this.cardPlayEvaluator.evaluateAllPlays(cards, analysis, myStacks, opponentStacks, hand);
-    const bestPlay = this.cardPlayEvaluator.selectBestPlay(evaluations);
+    const allEvaluations = this.cardPlayEvaluator.evaluateAllPlays(availableCards, analysis, myStacks, opponentStacks, hand);
+    
+    // Apply difficulty-based modifications to evaluations
+    const difficultyAdjustedEvaluations = this.difficultyManager.applyDifficultyToCardDecision(allEvaluations, this.difficultyConfig);
+    
+    const bestPlay = this.cardPlayEvaluator.selectBestPlay(difficultyAdjustedEvaluations);
     
     if (!bestPlay) {
       console.warn('AI: No valid plays found');
       return;
     }
     
-    // Execute the play
+    // Execute the play with difficulty-aware logging
+    const difficultyIndicator = this.getDifficultyIndicator();
+    
     if (isWildCardPlayOption(bestPlay)) {
       // Wild card: execute placement + nomination in one coordinated decision
-      console.log(`AI: Playing wild card ${bestPlay.card.toString()} to ${bestPlay.placement.targetPile} as ${bestPlay.nomination.character} ${bestPlay.nomination.bodyPart} - ${bestPlay.reasoning} (combined value: ${bestPlay.combinedValue})`);
+      console.log(`AI (${difficultyIndicator}): Playing wild card ${bestPlay.card.toString()} to ${bestPlay.placement.targetPile} as ${bestPlay.nomination.character} ${bestPlay.nomination.bodyPart} - ${bestPlay.reasoning} (combined value: ${bestPlay.combinedValue})`);
       
       // Play the card
       this.player.playCard(bestPlay.card, bestPlay.placement);
@@ -143,7 +150,7 @@ export class AIPlayer {
       });
     } else {
       // Regular card: just place it
-      console.log(`AI: Playing ${bestPlay.card.toString()} - ${bestPlay.reasoning} (value: ${bestPlay.value}, type: ${bestPlay.type})`);
+      console.log(`AI (${difficultyIndicator}): Playing ${bestPlay.card.toString()} - ${bestPlay.reasoning} (value: ${bestPlay.value}, type: ${bestPlay.type})`);
       this.player.playCard(bestPlay.card, bestPlay.placement);
     }
   }
@@ -157,7 +164,7 @@ export class AIPlayer {
   }
 
   /**
-   * Handle MOVE_CARD state - strategically move cards to optimize position
+   * Handle MOVE_CARD state - strategically move cards to optimize position with difficulty
    */
   private handleMoveCard(): void {
     const analysis = this.getGameAnalysis();
@@ -165,8 +172,12 @@ export class AIPlayer {
     const opponentStacks = this.player.getOpponentStacks();
     
     // Use MoveEvaluator to find the best strategic move
-    const evaluations = this.moveEvaluator.evaluateAllMoves(myStacks, opponentStacks, analysis);
-    const bestMove = this.moveEvaluator.selectBestMove(evaluations);
+    const allEvaluations = this.moveEvaluator.evaluateAllMoves(myStacks, opponentStacks, analysis);
+    
+    // Apply difficulty-based modifications to move evaluations
+    const difficultyAdjustedEvaluations = this.difficultyManager.applyDifficultyToMoveDecision(allEvaluations, this.difficultyConfig);
+    
+    const bestMove = this.moveEvaluator.selectBestMove(difficultyAdjustedEvaluations);
     
     if (bestMove) {
       const moveOptions: MoveOptions = {
@@ -181,7 +192,8 @@ export class AIPlayer {
         `to ${bestMove.toStack.getId()}` : 
         'to new stack';
       
-      console.log(`AI: Moving ${bestMove.card.toString()} ${stackInfo} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
+      const difficultyIndicator = this.getDifficultyIndicator();
+      console.log(`AI (${difficultyIndicator}): Moving ${bestMove.card.toString()} ${stackInfo} - ${bestMove.reasoning} (value: ${bestMove.value}, type: ${bestMove.type})`);
       this.player.moveCard(moveOptions);
     } else {
       console.warn('AI: No strategic moves found');
@@ -190,10 +202,47 @@ export class AIPlayer {
 
 
   /**
+   * Get difficulty configuration for external access
+   */
+  getDifficultyConfig(): DifficultyConfig {
+    return this.difficultyConfig;
+  }
+
+  /**
+   * Get difficulty indicator for logging
+   */
+  private getDifficultyIndicator(): string {
+    switch (this.difficulty) {
+      case 'easy': return '😊 Easy';
+      case 'medium': return '🎯 Medium';
+      case 'hard': return '🔥 Hard';
+      default: return this.difficulty;
+    }
+  }
+
+  /**
+   * Enhanced strategy information that includes difficulty context
+   */
+  getStrategy(): string {
+    const analysis = this.getGameAnalysis();
+    const baseStrategy = this.analyzer.getAnalysisSummary(analysis);
+    const config = this.difficultyConfig;
+    
+    const difficultyInfo = `Difficulty: ${this.difficulty.toUpperCase()} | ` +
+      `Wild Conservation: ${Math.round(config.wildCardConservation * 100)}% | ` +
+      `Disruption Aggression: ${Math.round(config.disruptionAggression * 100)}% | ` +
+      `Mistake Rate: ${Math.round(config.mistakeRate * 100)}% | ` +
+      `Cascade Optimization: ${config.cascadeOptimization ? 'ON' : 'OFF'}`;
+    
+    return `${baseStrategy}\n\n--- AI Difficulty Settings ---\n${difficultyInfo}`;
+  }
+
+  /**
    * Log game result when game is over
    */
   private logGameResult(): void {
     const state = this.player.getState();
-    console.log(`AI: Game over - ${state.getMessage()}`);
+    const difficultyIndicator = this.getDifficultyIndicator();
+    console.log(`AI (${difficultyIndicator}): Game over - ${state.getMessage()}`);
   }
 }
