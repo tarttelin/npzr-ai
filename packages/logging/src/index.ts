@@ -1,7 +1,4 @@
 // NPZR Logging System - Simple console-based logging
 
-// Export simple console logger
-export { default as logger } from './logger.js';
-
-// Browser debug logger (only available in browser environment)
-export { initializeBrowserDebugLogger, BrowserDebugLogger } from './browserLogger.js';
+// Export everything from the main logger module
+export { default as logger, BrowserLogStore, type LogLevel, LOG_LEVELS } from './logger.js';

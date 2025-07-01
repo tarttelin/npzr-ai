@@ -1,5 +1,16 @@
 // Simple console-based logger - no external dependencies
 
+// Type definitions for log levels
+export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+
+// Log level priorities for filtering
+export const LOG_LEVELS: Record<LogLevel, number> = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  debug: 3,
+};
+
 interface LogMethod {
   (message: string, meta?: any): void;
 }

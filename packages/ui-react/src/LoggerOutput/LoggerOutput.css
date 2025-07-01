@@ -1,0 +1,197 @@
+/* Logger Output Component Styles */
+
+.logger-output {
+  position: fixed;
+  z-index: 10000;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  overflow: hidden;
+  resize: both;
+  min-width: 300px;
+  min-height: 200px;
+}
+
+/* Position variants */
+.logger-output--top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.logger-output--top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.logger-output--bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.logger-output--bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+/* Header */
+.logger-output__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #444;
+  color: #fff;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logger-output__title {
+  font-weight: bold;
+  color: #4CAF50;
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Controls */
+.logger-output__level-select {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  outline: none;
+}
+
+.logger-output__level-select:focus {
+  border-color: #4CAF50;
+}
+
+.logger-output__btn {
+  background: #444;
+  color: #fff;
+  border: 1px solid #666;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.logger-output__btn:hover {
+  background: #555;
+  border-color: #777;
+}
+
+.logger-output__btn--active {
+  background: #4CAF50;
+  border-color: #4CAF50;
+}
+
+.logger-output__btn--danger {
+  background: #f44336;
+  border-color: #f44336;
+}
+
+.logger-output__btn--danger:hover {
+  background: #e53935;
+  border-color: #e53935;
+}
+
+.logger-output__btn--close {
+  background: #666;
+  border-color: #888;
+  font-weight: bold;
+}
+
+.logger-output__btn--close:hover {
+  background: #777;
+  border-color: #999;
+}
+
+/* Content area */
+.logger-output__content {
+  width: 100%;
+  height: calc(100% - 40px);
+  background: #0d1117;
+  color: #e6edf3;
+  border: none;
+  outline: none;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  resize: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #222;
+}
+
+.logger-output__content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.logger-output__content::-webkit-scrollbar-track {
+  background: #222;
+}
+
+.logger-output__content::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.logger-output__content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.logger-output__content::placeholder {
+  color: #6e7681;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .logger-output {
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 40px);
+  }
+  
+  .logger-output__header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .logger-output__title {
+    min-width: 80px;
+    font-size: 11px;
+  }
+  
+  .logger-output__btn,
+  .logger-output__level-select {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+/* Animation for show/hide */
+.logger-output {
+  animation: logger-fadein 0.2s ease-out;
+}
+
+@keyframes logger-fadein {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

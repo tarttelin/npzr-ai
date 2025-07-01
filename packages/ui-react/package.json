@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc && npm run copy-css",
-    "copy-css": "mkdir -p dist/DebugLogger && cp src/DebugLogger/*.css dist/DebugLogger/",
+    "copy-css": "mkdir -p dist/LoggerOutput && cp src/LoggerOutput/*.css dist/LoggerOutput/",
     "test": "jest --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/**/*.{ts,tsx}"

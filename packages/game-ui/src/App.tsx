@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { DebugLogger, useDebugLogger } from '@npzr/ui-react';
+import { LoggerProvider, LoggerOutput, useLogger } from '@npzr/ui-react';
 import { logger } from '@npzr/logging';
 import { GameEngine } from '@npzr/core';
 import { AIPlayer } from '@npzr/ai';
 import './App.css';
 
-const App: React.FC = () => {
+const GameContent: React.FC = () => {
   const [gameEngine] = useState(() => {
     const engine = new GameEngine();
     engine.createGame();
     return engine;
   });
   
-  const { isVisible: isDebugVisible, toggle: toggleDebug } = useDebugLogger();
+  const { toggle: toggleDebug } = useLogger();
 
   const handleStartGame = () => {
     logger.info('Starting new NPZR game', { 
@@ -82,12 +82,20 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <DebugLogger 
-        isVisible={isDebugVisible}
-        onToggle={toggleDebug}
+      <LoggerOutput 
         position="top-right"
+        width={600}
+        height={400}
       />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <LoggerProvider defaultLevel="debug" defaultVisible={false}>
+      <GameContent />
+    </LoggerProvider>
   );
 };
 
