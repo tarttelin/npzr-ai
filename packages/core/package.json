@@ -1,0 +1,33 @@
+{
+  "name": "@npzr/core",
+  "version": "1.0.0",
+  "description": "Pure game logic for NPZR card game - no external dependencies",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "npzr",
+    "game-engine",
+    "card-game",
+    "typescript"
+  ],
+  "author": "npzr-ai",
+  "license": "MIT",
+  "files": [
+    "dist/**/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.0"
+  }
+}

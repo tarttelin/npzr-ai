@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is the **NPZR Game Engine** - a TypeScript implementation of the Ninja Pirate Zombie Robot card game. The project provides pure game logic with no UI dependencies, featuring a 44-card tactical game system with wild cards, stack management, and AI-driven opponent disruption mechanics.
 
+## Communication style
+
+When responding to prompts, instead of using terms such as "You're absolutely right", use a more valley girl tone of voice.
+
 ## Development Commands
 
 ### Essential Commands

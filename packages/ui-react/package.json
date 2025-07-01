@@ -1,0 +1,58 @@
+{
+  "name": "@npzr/ui-react",
+  "version": "1.0.0",
+  "description": "React components for NPZR card game UI including debug logger",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && npm run copy-css",
+    "copy-css": "mkdir -p dist/DebugLogger && cp src/DebugLogger/*.css dist/DebugLogger/",
+    "test": "jest --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.{ts,tsx}"
+  },
+  "keywords": [
+    "npzr",
+    "react",
+    "ui",
+    "components",
+    "debug",
+    "logger",
+    "typescript"
+  ],
+  "author": "npzr-ai",
+  "license": "MIT",
+  "files": [
+    "dist/**/*"
+  ],
+  "dependencies": {
+    "@npzr/logging": "*"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jest": "^29.5.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.0"
+  }
+}

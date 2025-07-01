@@ -1,24 +1,33 @@
 {
-  "name": "npzr-game-engine",
+  "name": "npzr-monorepo",
   "version": "1.0.0",
-  "description": "TypeScript game rules engine for Ninja Pirate Zombie Robot (NPZR) card game",
-  "main": "dist/index.js",
+  "description": "NPZR Card Game - Monorepo with Core Engine, AI, Logging, and React UI",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "NODE_ENV=production tsc",
-    "test": "NODE_ENV=test jest",
-    "test:watch": "NODE_ENV=test jest --watch",
-    "test:coverage": "NODE_ENV=test jest --coverage",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "typecheck": "tsc --noEmit",
-    "dev": "NODE_ENV=development ts-node src/index.ts",
-    "start": "NODE_ENV=production node dist/index.js"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "test:watch": "npm run test:watch --workspaces",
+    "test:coverage": "npm run test:coverage --workspaces",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces",
+    "typecheck": "npm run typecheck --workspaces",
+    "dev:ui": "npm run dev --workspace=@npzr/game-ui",
+    "build:ui": "npm run build --workspace=@npzr/game-ui",
+    "clean": "npm run clean --workspaces --if-present",
+    "install:all": "npm install && npm install --workspaces"
   },
   "keywords": [
     "card-game",
     "typescript",
     "game-engine",
-    "npzr"
+    "npzr",
+    "monorepo",
+    "react",
+    "ai",
+    "logging"
   ],
   "author": "npzr-ai",
   "license": "MIT",
@@ -33,7 +42,8 @@
     "ts-node": "^10.9.0",
     "typescript": "^5.2.0"
   },
-  "dependencies": {
-    "winston": "^3.17.0"
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }
