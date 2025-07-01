@@ -1,0 +1,42 @@
+{
+  "name": "@npzr/logging",
+  "version": "1.0.0",
+  "description": "Environment-aware logging system with browser debug console for NPZR",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "npzr",
+    "logging",
+    "winston",
+    "browser",
+    "debug",
+    "typescript"
+  ],
+  "author": "npzr-ai",
+  "license": "MIT",
+  "files": [
+    "dist/**/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.0"
+  }
+}
