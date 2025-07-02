@@ -1,0 +1,128 @@
+/* Header Component Styles */
+.header {
+  background: linear-gradient(135deg, #2C2C2C 0%, #1A1A1A 100%);
+  padding: 1rem 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logo {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.logo:hover {
+  transform: none;
+}
+
+.logo-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.logo-ninja {
+  color: #CCCCCC;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.logo-pirate {
+  color: #DC143C;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.logo-zombie {
+  color: #32CD32;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.logo-robot {
+  color: #FFD700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.main-nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: #FFFFFF;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.nav-link--active {
+  background: rgba(255, 107, 53, 0.2);
+  color: #FF6B35;
+}
+
+.nav-link--active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #FF6B35;
+  border-radius: 50%;
+}
+
+/* Container styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .logo-text {
+    font-size: 1.2rem;
+    justify-content: center;
+  }
+  
+  .main-nav {
+    gap: 1rem;
+  }
+  
+  .nav-link {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+}

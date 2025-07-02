@@ -31,7 +31,8 @@
     "process": "^0.11.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "util": "^0.12.5"
+    "util": "^0.12.5",
+    "wouter": "^3.7.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

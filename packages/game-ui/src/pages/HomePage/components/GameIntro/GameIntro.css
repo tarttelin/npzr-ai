@@ -1,0 +1,64 @@
+/* Game Intro Section Styles */
+.game-intro {
+  background: #FFFFFF;
+  text-align: center;
+}
+
+.game-intro h2 {
+  font-family: 'Orbitron', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2C2C2C;
+  margin: 0 0 2rem 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.intro-text {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  color: #666666;
+  max-width: 800px;
+  margin: 0 auto;
+  font-weight: 400;
+}
+
+/* Container styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Section spacing */
+.section {
+  padding: 4rem 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .game-intro h2 {
+    font-size: 2rem;
+  }
+  
+  .intro-text {
+    font-size: 1.1rem;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .section {
+    padding: 3rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-intro h2 {
+    font-size: 1.8rem;
+  }
+  
+  .intro-text {
+    font-size: 1rem;
+  }
+}

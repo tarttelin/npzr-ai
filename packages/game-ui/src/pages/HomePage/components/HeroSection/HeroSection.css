@@ -1,0 +1,159 @@
+/* Hero Section Styles */
+.hero-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #FFFFFF;
+  padding: 4rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3rem;
+  text-align: center;
+}
+
+.game-logo {
+  z-index: 2;
+  position: relative;
+}
+
+.tagline {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1rem 0 0 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  color: #FFFFFF;
+}
+
+.character-showcase {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.character-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.character-hero:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.character-icon {
+  width: 80px;
+  height: 80px;
+  background-image: url('/img/sprite-sheet-padded.png');
+  background-size: 320px 240px;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Head tiles only - top row of sprite sheet */
+.ninja-icon {
+  background-position: 0 0;
+}
+
+.pirate-icon {
+  background-position: -80px 0;
+}
+
+.zombie-icon {
+  background-position: -160px 0;
+}
+
+.robot-icon {
+  background-position: -240px 0;
+}
+
+/* Container styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 3rem 0;
+  }
+  
+  .hero-content {
+    gap: 2rem;
+  }
+  
+  .tagline {
+    font-size: 1.2rem;
+  }
+  
+  .character-showcase {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .character-hero {
+    padding: 1rem;
+  }
+  
+  .character-icon {
+    width: 60px;
+    height: 60px;
+    background-size: 240px 180px;
+  }
+  
+  .pirate-icon {
+    background-position: -60px 0;
+  }
+
+  .zombie-icon {
+    background-position: -120px 0;
+  }
+
+  .robot-icon {
+    background-position: -180px 0;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .character-showcase {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  .character-icon {
+    width: 50px;
+    height: 50px;
+    background-size: 200px 150px;
+  }
+  
+  .pirate-icon {
+    background-position: -50px 0;
+  }
+
+  .zombie-icon {
+    background-position: -100px 0;
+  }
+
+  .robot-icon {
+    background-position: -150px 0;
+  }
+}

@@ -1,0 +1,27 @@
+/* HomePage Component Styles */
+.home-page {
+  width: 100%;
+}
+
+/* Container utility */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Section spacing */
+.section {
+  padding: 4rem 0;
+}
+
+/* Responsive container */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .section {
+    padding: 2rem 0;
+  }
+}

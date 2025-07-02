@@ -1,0 +1,147 @@
+/* Game Features Section Styles */
+.game-features {
+  background: #FFFFFF;
+}
+
+.game-features h2 {
+  font-family: 'Orbitron', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2C2C2C;
+  text-align: center;
+  margin: 0 0 3rem 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.feature {
+  text-align: center;
+  padding: 2rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin: 0 0 1.5rem 0;
+  display: block;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feature h3 {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2C2C2C;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.feature p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #666666;
+  margin: 0;
+}
+
+/* Feature specific colors */
+.feature:nth-child(1) h3 {
+  color: #FF6B35;
+}
+
+.feature:nth-child(2) h3 {
+  color: #9370DB;
+}
+
+.feature:nth-child(3) h3 {
+  color: #32CD32;
+}
+
+.feature:nth-child(4) h3 {
+  color: #DC143C;
+}
+
+/* Container styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Section spacing */
+.section {
+  padding: 4rem 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .game-features h2 {
+    font-size: 2rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .feature {
+    padding: 1.5rem;
+  }
+  
+  .feature-icon {
+    font-size: 2.5rem;
+  }
+  
+  .feature h3 {
+    font-size: 1.2rem;
+  }
+  
+  .feature p {
+    font-size: 1rem;
+  }
+  
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .section {
+    padding: 3rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .features-grid {
+    gap: 1.5rem;
+  }
+  
+  .feature {
+    padding: 1.2rem;
+  }
+  
+  .feature-icon {
+    font-size: 2rem;
+    height: 3rem;
+  }
+  
+  .feature h3 {
+    font-size: 1.1rem;
+  }
+}
