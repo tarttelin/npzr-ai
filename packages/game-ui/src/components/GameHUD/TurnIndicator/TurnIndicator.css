@@ -1,0 +1,92 @@
+/* TurnIndicator Component Styles */
+
+.turn-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.turn-indicator--active {
+  background: rgba(25, 118, 210, 0.1);
+  border: 1px solid rgba(25, 118, 210, 0.3);
+}
+
+.turn-indicator__phase {
+  font-family: 'Roboto', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.turn-indicator--active .turn-indicator__phase {
+  color: #1976D2;
+}
+
+.turn-indicator__current-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.turn-indicator__label {
+  font-family: 'Roboto', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9E9E9E;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.turn-indicator__player-name {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1976D2;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.turn-indicator__game-over {
+  font-size: 18px;
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .turn-indicator {
+    padding: 8px 16px;
+    min-width: 120px;
+  }
+  
+  .turn-indicator__phase {
+    font-size: 10px;
+  }
+  
+  .turn-indicator__player-name {
+    font-size: 12px;
+  }
+}

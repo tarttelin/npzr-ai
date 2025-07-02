@@ -1,86 +1,84 @@
-import React, { useState } from 'react';
-import { useLogger } from '@npzr/ui-react';
-import { logger } from '@npzr/logging';
-import { GameEngine } from '@npzr/core';
-import { AIPlayer } from '@npzr/ai';
+import React from 'react';
+import { GamePageProps } from '../../types/GameUI.types';
+import { GameHUD } from '../../components/GameHUD/GameHUD';
+import { GameCanvas } from '../../components/GameCanvas/GameCanvas';
+import { useGameState } from '../../hooks/useGameState';
 import './GamePage.css';
 
-export const GamePage: React.FC = () => {
-  const [gameEngine] = useState(() => {
-    const engine = new GameEngine();
-    engine.createGame();
-    return engine;
-  });
-  
-  const { toggle: toggleDebug } = useLogger();
+/**
+ * GamePage component - Main game interface page
+ * 
+ * Features:
+ * - Split-screen layout with HUD (top) and Canvas (bottom)
+ * - Game state management
+ * - Responsive design
+ * - Keyboard shortcuts support
+ * - Integration with game engine (future)
+ */
+export const GamePage: React.FC<GamePageProps> = () => {
+  const { gameState, startNewGame, pauseGame } = useGameState();
 
-  const handleStartGame = () => {
-    logger.info('Starting new NPZR game', { 
-      timestamp: Date.now(),
-      players: 2,
-      mode: 'player-vs-ai'
-    });
+  // Handle keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'Escape':
+          if (gameState.gamePhase === 'playing') {
+            pauseGame();
+          }
+          break;
+        case 'n':
+        case 'N':
+          if (event.ctrlKey || event.metaKey) {
+            event.preventDefault();
+            startNewGame();
+          }
+          break;
+        default:
+          break;
+      }
+    };
 
-    // Add players
-    const humanPlayer = gameEngine.addPlayer('Human Player');
-    const aiPlayer = gameEngine.addPlayer('AI Player');
-    
-    // Create AI instance
-    new AIPlayer(aiPlayer, 'medium');
-    
-    logger.info('Game initialized successfully', {
-      humanPlayerId: humanPlayer.getId(),
-      aiPlayerId: aiPlayer.getId(),
-      aiDifficulty: 'medium'
-    });
-  };
-
-  const handleTestLogs = () => {
-    logger.debug('Debug message from game UI', { component: 'GamePage', action: 'test' });
-    logger.info('Info message from game UI', { component: 'GamePage', action: 'test' });
-    logger.warn('Warning message from game UI', { component: 'GamePage', action: 'test' });
-    logger.error('Error message from game UI', { component: 'GamePage', action: 'test' });
-  };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [gameState.gamePhase, startNewGame, pauseGame]);
 
   return (
-    <div className="game-page">
-      <div className="container">
-        <header className="game-header">
-          <h1>🎮 NPZR Game</h1>
-          <p>Ready to battle with ninjas, pirates, zombies, and robots?</p>
-        </header>
+    <div className="game-page" data-testid="game-page">
+      <div className="game-page__container">
+        {/* HUD Section */}
+        <div className="game-page__hud">
+          <GameHUD
+            gameState={gameState}
+            onNewGame={startNewGame}
+            onPause={pauseGame}
+          />
+        </div>
 
-        <div className="game-area">
-          <h2>Game Area</h2>
-          <p>This is a skeleton UI for the NPZR card game.</p>
-          
-          <div className="game-controls">
-            <button onClick={handleStartGame} className="btn btn--primary">
-              🚀 Start New Game
-            </button>
-            
-            <button onClick={handleTestLogs} className="btn btn--secondary">
-              📝 Test Logging
-            </button>
-            
-            <button onClick={toggleDebug} className="btn btn--debug">
-              🐛 Toggle Debug Logger
-            </button>
-          </div>
-
-          <div className="game-info">
-            <h3>Game Status</h3>
-            <p>No game in progress</p>
-            
-            <h3>Instructions</h3>
-            <ul>
-              <li>Click "Start New Game" to initialize the game engine</li>
-              <li>Click "Test Logging" to generate sample log messages</li>
-              <li>Click "Toggle Debug Logger" or press <kbd>Ctrl+Shift+L</kbd> to show/hide debug console</li>
-            </ul>
-          </div>
+        {/* Canvas Section */}
+        <div className="game-page__canvas">
+          <GameCanvas
+            gameState={gameState}
+          />
         </div>
       </div>
+
+      {/* Accessibility info */}
+      <div className="game-page__accessibility sr-only" aria-live="polite">
+        Current game phase: {gameState.gamePhase}
+        {gameState.gamePhase === 'playing' && (
+          `, Current turn: ${gameState.players[gameState.currentTurn].name}`
+        )}
+      </div>
+
+      {/* Keyboard shortcuts help */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="game-page__shortcuts">
+          <small>
+            Shortcuts: Ctrl+N (New Game), Esc (Pause)
+          </small>
+        </div>
+      )}
     </div>
   );
 };
