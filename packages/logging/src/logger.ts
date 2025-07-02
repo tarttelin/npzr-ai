@@ -73,7 +73,7 @@ const formatMessage = (level: string, message: string, meta?: any): string => {
 };
 
 const shouldLog = (level: string): boolean => {
-  if (isTest) return level === 'error'; // Only errors in tests
+  if (isTest) return false; // No logging in tests
   if (isDevelopment) return true; // All levels in development
   return level !== 'debug'; // Production: error, warn, info but not debug
 };

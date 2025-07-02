@@ -135,8 +135,8 @@ export class GameEngine {
     if (completedStacks.length > 0) {
       // Player earned moves
       player.setState(PlayerState.moveCard());
-    } else if (card.canContinueTurn()) {
-      // Wild card allows continuation
+    } else if (card.canContinueTurn() && player.getHand().size() > 0) {
+      // Wild card allows continuation only if player has cards left
       player.setState(PlayerState.playCard());
     } else {
       // End turn
@@ -154,8 +154,8 @@ export class GameEngine {
     if (completedStacks.length > 0) {
       // Player earned moves
       player.setState(PlayerState.moveCard());
-    } else if (card.canContinueTurn()) {
-      // Can continue playing
+    } else if (card.canContinueTurn() && player.getHand().size() > 0) {
+      // Can continue playing only if player has cards left
       player.setState(PlayerState.playCard());
     } else {
       // End turn
@@ -287,8 +287,8 @@ export class GameEngine {
   private continueOrEndTurn(playerId: string): void {
     const player = this.getPlayer(playerId);
     
-    // If the last played card was wild, player can continue playing
-    if (this.lastPlayedCard && this.lastPlayedCard.canContinueTurn()) {
+    // If the last played card was wild, player can continue playing if they have any cards left
+    if (this.lastPlayedCard && this.lastPlayedCard.canContinueTurn() && player.getHand().size() > 0) {
       player.setState(PlayerState.playCard());
     } else {
       // End turn
