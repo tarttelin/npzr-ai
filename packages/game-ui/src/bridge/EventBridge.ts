@@ -1,4 +1,34 @@
-import { EventEmitter } from 'events';
+/**
+ * Simple browser-compatible EventEmitter implementation
+ */
+class SimpleEventEmitter {
+  private events: Record<string, Function[]> = {};
+
+  on(event: string, listener: Function): void {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(listener);
+  }
+
+  off(event: string, listener: Function): void {
+    if (!this.events[event]) return;
+    this.events[event] = this.events[event].filter(l => l !== listener);
+  }
+
+  emit(event: string, ...args: any[]): void {
+    if (!this.events[event]) return;
+    this.events[event].forEach(listener => listener(...args));
+  }
+
+  removeAllListeners(event?: string): void {
+    if (event) {
+      delete this.events[event];
+    } else {
+      this.events = {};
+    }
+  }
+}
 
 /**
  * Event types for communication between React and Canvas layers
@@ -26,7 +56,7 @@ export interface CanvasEvents {
  * Bridge for communication between React components and PixiJS canvas
  * Uses EventEmitter pattern for loose coupling
  */
-export class EventBridge extends EventEmitter {
+export class EventBridge extends SimpleEventEmitter {
   private static instance: EventBridge | null = null;
 
   /**
