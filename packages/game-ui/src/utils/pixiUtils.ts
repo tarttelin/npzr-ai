@@ -25,8 +25,10 @@ export const DECK_CONFIG = {
 /**
  * Create a PixiJS application with standard configuration
  */
-export function createPixiApp(width: number, height: number): PIXI.Application {
-  const app = new PIXI.Application({
+export async function createPixiApp(width: number, height: number): Promise<PIXI.Application> {
+  const app = new PIXI.Application();
+  
+  await app.init({
     width,
     height,
     backgroundColor: CANVAS_CONFIG.BACKGROUND_COLOR,

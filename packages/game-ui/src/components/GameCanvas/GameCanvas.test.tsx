@@ -5,7 +5,8 @@ import { GameState } from '../../types/GameUI.types';
 // Mock PixiJS
 jest.mock('pixi.js', () => ({
   Application: jest.fn().mockImplementation(() => ({
-    view: document.createElement('canvas'),
+    init: jest.fn().mockResolvedValue(undefined),
+    canvas: document.createElement('canvas'),
     stage: {
       addChild: jest.fn(),
     },

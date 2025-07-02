@@ -25,27 +25,31 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
   /**
    * Initialize PixiJS application
    */
-  const initializeApp = useCallback(() => {
+  const initializeApp = useCallback(async () => {
     if (!containerRef.current || appRef.current) return;
 
-    // Calculate responsive canvas size
-    const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(width, height);
+    try {
+      // Calculate responsive canvas size
+      const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(width, height);
 
-    // Create PixiJS application
-    const app = createPixiApp(canvasWidth, canvasHeight);
-    appRef.current = app;
+      // Create PixiJS application
+      const app = await createPixiApp(canvasWidth, canvasHeight);
+      appRef.current = app;
 
-    // Add canvas to container
-    containerRef.current.appendChild(app.view as HTMLCanvasElement);
+      // Add canvas to container
+      containerRef.current.appendChild(app.canvas);
 
-    // Create and position deck placeholder
-    const deck = createDeckPlaceholder();
-    positionDeckPlaceholder(deck, canvasWidth, canvasHeight);
-    app.stage.addChild(deck);
-    deckRef.current = deck;
+      // Create and position deck placeholder
+      const deck = createDeckPlaceholder();
+      positionDeckPlaceholder(deck, canvasWidth, canvasHeight);
+      app.stage.addChild(deck);
+      deckRef.current = deck;
 
-    // Trigger resize callback
-    onResize?.(canvasWidth, canvasHeight);
+      // Trigger resize callback
+      onResize?.(canvasWidth, canvasHeight);
+    } catch (error) {
+      console.error('Failed to initialize PixiJS application:', error);
+    }
   }, [width, height, onResize]);
 
   /**
