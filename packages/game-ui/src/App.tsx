@@ -1,5 +1,5 @@
 import React from 'react';
-import { Router, Route } from 'wouter';
+import { Router, Route, Switch } from 'wouter';
 import { LoggerProvider, LoggerOutput } from '@npzr/ui-react';
 import { Layout } from './components/Layout/Layout';
 import { HomePage } from './pages/HomePage/HomePage';
@@ -12,20 +12,22 @@ export const App: React.FC = () => {
     <LoggerProvider defaultLevel="debug" defaultVisible={false}>
       <Router>
         <Layout>
-          <Route path="/" component={HomePage} />
-          <Route path="/game" component={GamePage} />
-          <Route path="/rules" component={RulesPage} />
-          
-          {/* 404 route */}
-          <Route>
-            <div className="not-found">
-              <div className="container">
-                <h1>404 - Page Not Found</h1>
-                <p>The page you're looking for doesn't exist.</p>
-                <a href="/" className="btn-primary">Go Home</a>
+          <Switch>
+            <Route path="/" component={HomePage} />
+            <Route path="/game" component={GamePage} />
+            <Route path="/rules" component={RulesPage} />
+            
+            {/* 404 route */}
+            <Route>
+              <div className="not-found">
+                <div className="container">
+                  <h1>404 - Page Not Found</h1>
+                  <p>The page you're looking for doesn't exist.</p>
+                  <a href="/" className="btn-primary">Go Home</a>
+                </div>
               </div>
-            </div>
-          </Route>
+            </Route>
+          </Switch>
         </Layout>
         
         <LoggerOutput 

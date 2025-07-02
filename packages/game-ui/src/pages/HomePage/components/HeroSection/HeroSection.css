@@ -1,4 +1,8 @@
 /* Hero Section Styles */
+:root {
+  --sprite-scale: 0.5;
+}
+
 .hero-section {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #FFFFFF;
@@ -55,29 +59,32 @@
 }
 
 .character-icon {
-  width: 80px;
-  height: 80px;
+  width: 140px;
+  height: 90px;
   background-image: url('/img/sprite-sheet-padded.png');
-  background-size: 320px 240px;
   background-repeat: no-repeat;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
-/* Head tiles only - top row of sprite sheet */
+/* Head tiles only - standardized 155x125px tiles */
 .ninja-icon {
-  background-position: 0 0;
+  background-position: calc(-10px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .pirate-icon {
-  background-position: -80px 0;
+  background-position: calc(-340px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .zombie-icon {
-  background-position: -160px 0;
+  background-position: calc(-660px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .robot-icon {
-  background-position: -240px 0;
+  background-position: calc(-980px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 /* Container styles */
@@ -113,19 +120,6 @@
   .character-icon {
     width: 60px;
     height: 60px;
-    background-size: 240px 180px;
-  }
-  
-  .pirate-icon {
-    background-position: -60px 0;
-  }
-
-  .zombie-icon {
-    background-position: -120px 0;
-  }
-
-  .robot-icon {
-    background-position: -180px 0;
   }
   
   .container {
@@ -142,18 +136,5 @@
   .character-icon {
     width: 50px;
     height: 50px;
-    background-size: 200px 150px;
-  }
-  
-  .pirate-icon {
-    background-position: -50px 0;
-  }
-
-  .zombie-icon {
-    background-position: -100px 0;
-  }
-
-  .robot-icon {
-    background-position: -150px 0;
   }
 }

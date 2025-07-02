@@ -1,4 +1,8 @@
 /* Character Showcase Section Styles */
+:root {
+  --sprite-scale: 0.5;
+}
+
 .characters {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
@@ -60,30 +64,33 @@
 }
 
 .character-icon {
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 90px;
   background-image: url('/img/sprite-sheet-padded.png');
-  background-size: 480px 360px;
   background-repeat: no-repeat;
   margin: 0 auto 1.5rem auto;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
-/* Head tiles only - top row of sprite sheet */
+/* Head tiles only - using corrected coordinates */
 .ninja-large {
-  background-position: 0 0;
+  background-position: calc(-10px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .pirate-large {
-  background-position: -120px 0;
+  background-position: calc(-340px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .zombie-large {
-  background-position: -240px 0;
+  background-position: calc(-660px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .robot-large {
-  background-position: -360px 0;
+  background-position: calc(-980px * var(--sprite-scale)) calc(-20px * var(--sprite-scale));
+  background-size: calc(1600px * var(--sprite-scale)) calc(1000px * var(--sprite-scale));
 }
 
 .character-card h3 {
@@ -167,19 +174,6 @@
   .character-icon {
     width: 100px;
     height: 100px;
-    background-size: 400px 300px;
-  }
-  
-  .pirate-large {
-    background-position: -100px 0;
-  }
-
-  .zombie-large {
-    background-position: -200px 0;
-  }
-
-  .robot-large {
-    background-position: -300px 0;
   }
   
   .character-card h3 {
@@ -199,19 +193,6 @@
   .character-icon {
     width: 80px;
     height: 80px;
-    background-size: 320px 240px;
-  }
-  
-  .pirate-large {
-    background-position: -80px 0;
-  }
-
-  .zombie-large {
-    background-position: -160px 0;
-  }
-
-  .robot-large {
-    background-position: -240px 0;
   }
   
   .character-card h3 {
