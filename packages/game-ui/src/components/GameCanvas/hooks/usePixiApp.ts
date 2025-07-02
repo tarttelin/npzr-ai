@@ -1,12 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
-import * as PIXI from 'pixi.js';
-import { 
-  createPixiApp, 
-  createDeckPlaceholder, 
-  positionDeckPlaceholder, 
-  destroyPixiApp,
-  calculateCanvasSize 
-} from '../../../utils/pixiUtils';
+import { CanvasApplication } from '../../../canvas/core/Application';
+import { GameplayScene } from '../../../canvas/scenes/GameplayScene';
+import { EventBridge } from '../../../bridge/EventBridge';
+import { calculateCanvasSize } from '../../../canvas/utils/Math';
 
 interface UsePixiAppOptions {
   width: number;
@@ -15,35 +11,40 @@ interface UsePixiAppOptions {
 }
 
 /**
- * Custom hook for managing PixiJS application lifecycle
+ * Custom hook for managing PixiJS application lifecycle with new architecture
  */
 export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
-  const appRef = useRef<PIXI.Application | null>(null);
+  const canvasAppRef = useRef<CanvasApplication | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const deckRef = useRef<PIXI.Graphics | null>(null);
+  const sceneRef = useRef<GameplayScene | null>(null);
+  const eventBridgeRef = useRef<EventBridge | null>(null);
 
   /**
-   * Initialize PixiJS application
+   * Initialize PixiJS application with new architecture
    */
   const initializeApp = useCallback(async () => {
-    if (!containerRef.current || appRef.current) return;
+    if (!containerRef.current || canvasAppRef.current) return;
 
     try {
       // Calculate responsive canvas size
       const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(width, height);
 
-      // Create PixiJS application
-      const app = await createPixiApp(canvasWidth, canvasHeight);
-      appRef.current = app;
+      // Create canvas application
+      const canvasApp = new CanvasApplication();
+      await canvasApp.init(containerRef.current, canvasWidth, canvasHeight);
+      canvasAppRef.current = canvasApp;
 
-      // Add canvas to container
-      containerRef.current.appendChild(app.canvas);
+      // Create gameplay scene
+      const scene = new GameplayScene(canvasApp);
+      canvasApp.addToStage(scene);
+      sceneRef.current = scene;
 
-      // Create and position deck placeholder
-      const deck = createDeckPlaceholder();
-      positionDeckPlaceholder(deck, canvasWidth, canvasHeight);
-      app.stage.addChild(deck);
-      deckRef.current = deck;
+      // Setup event bridge
+      const eventBridge = EventBridge.getInstance();
+      eventBridgeRef.current = eventBridge;
+
+      // Setup scene event handlers
+      setupSceneEvents(scene, eventBridge);
 
       // Trigger resize callback
       onResize?.(canvasWidth, canvasHeight);
@@ -53,18 +54,41 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
   }, [width, height, onResize]);
 
   /**
+   * Setup scene event handlers
+   */
+  const setupSceneEvents = useCallback((scene: GameplayScene, eventBridge: EventBridge) => {
+    // Forward scene events to React layer
+    scene.on('game:deckClick', (data) => {
+      eventBridge.emitToReact('game:deckClick', data);
+    });
+
+    scene.on('game:deckHover', (data) => {
+      eventBridge.emitToReact('game:deckHover', data);
+    });
+
+    scene.on('game:deckHoverEnd', () => {
+      eventBridge.emitToReact('game:deckHoverEnd', undefined);
+    });
+
+    // Listen for React events to update canvas
+    eventBridge.onReactEvent('ui:updateDeck', (data) => {
+      scene.updateDeckCount(data.cardCount);
+    });
+  }, []);
+
+  /**
    * Resize PixiJS application
    */
   const resizeApp = useCallback((newWidth: number, newHeight: number) => {
-    if (!appRef.current || !deckRef.current) return;
+    if (!canvasAppRef.current || !sceneRef.current) return;
 
     const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(newWidth, newHeight);
     
-    // Resize the renderer
-    appRef.current.renderer.resize(canvasWidth, canvasHeight);
+    // Resize the canvas application
+    canvasAppRef.current.resize(canvasWidth, canvasHeight);
     
-    // Reposition deck placeholder
-    positionDeckPlaceholder(deckRef.current, canvasWidth, canvasHeight);
+    // Update scene layout
+    sceneRef.current.onResize(canvasWidth, canvasHeight);
 
     // Trigger resize callback
     onResize?.(canvasWidth, canvasHeight);
@@ -74,10 +98,17 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
    * Cleanup PixiJS application
    */
   const cleanup = useCallback(() => {
-    if (appRef.current) {
-      destroyPixiApp(appRef.current);
-      appRef.current = null;
-      deckRef.current = null;
+    if (sceneRef.current) {
+      sceneRef.current.destroy();
+      sceneRef.current = null;
+    }
+    if (canvasAppRef.current) {
+      canvasAppRef.current.destroy();
+      canvasAppRef.current = null;
+    }
+    if (eventBridgeRef.current) {
+      eventBridgeRef.current.destroy();
+      eventBridgeRef.current = null;
     }
   }, []);
 
@@ -89,14 +120,16 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
 
   // Handle resize
   useEffect(() => {
-    if (appRef.current) {
+    if (canvasAppRef.current) {
       resizeApp(width, height);
     }
   }, [width, height, resizeApp]);
 
   return {
     containerRef,
-    app: appRef.current,
+    app: canvasAppRef.current,
+    scene: sceneRef.current,
+    eventBridge: eventBridgeRef.current,
     resize: resizeApp,
     cleanup,
   };

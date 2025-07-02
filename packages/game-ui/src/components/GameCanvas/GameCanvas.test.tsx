@@ -17,10 +17,9 @@ jest.mock('pixi.js', () => ({
     destroyed: false,
   })),
   Graphics: jest.fn().mockImplementation(() => ({
-    beginFill: jest.fn().mockReturnThis(),
-    lineStyle: jest.fn().mockReturnThis(),
-    drawRoundedRect: jest.fn().mockReturnThis(),
-    endFill: jest.fn().mockReturnThis(),
+    rect: jest.fn().mockReturnThis(),
+    fill: jest.fn().mockReturnThis(),
+    stroke: jest.fn().mockReturnThis(),
     x: 0,
     y: 0,
   })),

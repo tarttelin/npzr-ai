@@ -1,31 +1,21 @@
+/**
+ * @deprecated This file is deprecated. Use the new canvas architecture instead.
+ * Import from '@/canvas' for new functionality.
+ */
+
 import * as PIXI from 'pixi.js';
+import { CANVAS_CONFIG } from '../canvas/utils/Constants';
+import { DECK_CONFIG, DeckSprite } from '../canvas/entities/Deck/DeckSprite';
+import { calculateCanvasSize as newCalculateCanvasSize } from '../canvas/utils/Math';
+
+// Re-export for backward compatibility
+export { CANVAS_CONFIG, DECK_CONFIG };
 
 /**
- * Canvas configuration constants
- */
-export const CANVAS_CONFIG = {
-  MIN_WIDTH: 800,
-  MIN_HEIGHT: 600,
-  ASPECT_RATIO: 4 / 3,
-  BACKGROUND_COLOR: 0x2E7D32, // Green baize color
-} as const;
-
-/**
- * Deck placeholder configuration
- */
-export const DECK_CONFIG = {
-  WIDTH: 80,
-  HEIGHT: 120,
-  BORDER_RADIUS: 8,
-  COLOR: 0x1976D2, // Blue color
-  BORDER_COLOR: 0x0D47A1, // Darker blue border
-  BORDER_WIDTH: 2,
-} as const;
-
-/**
- * Create a PixiJS application with standard configuration
+ * @deprecated Use CanvasApplication from '../canvas/core/Application' instead
  */
 export async function createPixiApp(width: number, height: number): Promise<PIXI.Application> {
+  console.warn('createPixiApp is deprecated. Use CanvasApplication instead.');
   const app = new PIXI.Application();
   
   await app.init({
@@ -41,61 +31,41 @@ export async function createPixiApp(width: number, height: number): Promise<PIXI
 }
 
 /**
- * Create a rounded rectangle sprite for the deck placeholder
+ * @deprecated Use DeckSprite from '../canvas/entities/Deck/DeckSprite' instead
  */
 export function createDeckPlaceholder(): PIXI.Graphics {
-  const deck = new PIXI.Graphics();
-  
-  // Draw the main rectangle with rounded corners
-  deck.beginFill(DECK_CONFIG.COLOR);
-  deck.lineStyle(DECK_CONFIG.BORDER_WIDTH, DECK_CONFIG.BORDER_COLOR);
-  deck.drawRoundedRect(
-    0,
-    0,
-    DECK_CONFIG.WIDTH,
-    DECK_CONFIG.HEIGHT,
-    DECK_CONFIG.BORDER_RADIUS
-  );
-  deck.endFill();
-
-  return deck;
+  console.warn('createDeckPlaceholder is deprecated. Use DeckSprite instead.');
+  const deckSprite = new DeckSprite();
+  return deckSprite;
 }
 
 /**
- * Position the deck placeholder on the left side of the canvas
+ * @deprecated Use DeckSprite.positionDeck() method instead
  */
-export function positionDeckPlaceholder(deck: PIXI.Graphics, _canvasWidth: number, canvasHeight: number): void {
-  // Position deck on left side, vertically centered
-  deck.x = 50; // 50px from left edge
-  deck.y = (canvasHeight - DECK_CONFIG.HEIGHT) / 2; // Vertically centered
+export function positionDeckPlaceholder(deck: PIXI.Graphics, canvasWidth: number, canvasHeight: number): void {
+  console.warn('positionDeckPlaceholder is deprecated. Use DeckSprite.positionDeck() instead.');
+  if (deck instanceof DeckSprite) {
+    deck.positionDeck(canvasWidth, canvasHeight);
+  } else {
+    // Fallback for raw Graphics objects
+    deck.x = 50;
+    deck.y = (canvasHeight - DECK_CONFIG.HEIGHT) / 2;
+  }
 }
 
 /**
- * Calculate responsive canvas size based on container
+ * @deprecated Use calculateCanvasSize from '../canvas/utils/Math' instead
  */
 export function calculateCanvasSize(containerWidth: number, containerHeight: number): { width: number; height: number } {
-  // Ensure minimum size
-  const minWidth = Math.max(containerWidth, CANVAS_CONFIG.MIN_WIDTH);
-  const minHeight = Math.max(containerHeight, CANVAS_CONFIG.MIN_HEIGHT);
-
-  // Calculate size maintaining aspect ratio
-  const aspectRatio = CANVAS_CONFIG.ASPECT_RATIO;
-  let width = minWidth;
-  let height = width / aspectRatio;
-
-  // If height exceeds container, adjust based on height
-  if (height > minHeight) {
-    height = minHeight;
-    width = height * aspectRatio;
-  }
-
-  return { width: Math.floor(width), height: Math.floor(height) };
+  console.warn('calculateCanvasSize is deprecated. Use the version from canvas/utils/Math instead.');
+  return newCalculateCanvasSize(containerWidth, containerHeight);
 }
 
 /**
- * Cleanup PixiJS application resources
+ * @deprecated Use CanvasApplication.destroy() method instead
  */
 export function destroyPixiApp(app: PIXI.Application): void {
+  console.warn('destroyPixiApp is deprecated. Use CanvasApplication.destroy() instead.');
   if (app) {
     app.destroy(true, { children: true, texture: true });
   }
