@@ -3,6 +3,7 @@ import { Hand } from './Hand.js';
 import { Stack } from './Stack.js';
 import { Score } from './Score.js';
 import { PlayerState } from './PlayerState.js';
+import { GameEngine } from './GameEngine.js';
 
 export interface PlayCardOptions {
   targetStackId?: string;
@@ -30,7 +31,7 @@ export class Player {
   constructor(
     private readonly playerId: string,
     private readonly name: string,
-    private gameEngine: any // TODO: proper type when GameEngine is implemented
+    private gameEngine: GameEngine
   ) {}
 
   // Player identity
@@ -85,7 +86,6 @@ export class Player {
     if (!this.hand.hasCard(card)) {
       throw new Error(`Card ${card.id} not found in hand`);
     }
-
     this.gameEngine.playerPlayCard(this.playerId, card, options);
   }
 

@@ -85,7 +85,30 @@ export class CardPlayEvaluator {
         const nominations = this.evaluateNominationsForPosition(wildCard, position, placement.targetStack, gameAnalysis, hand, ownStacks);
         
         for (const nomination of nominations) {
-          const combinedValue = placement.value + nomination.value;
+          const baseValue = placement.value + nomination.value;
+          
+          // Apply hand size penalty for wild cards - stronger penalty as hand gets smaller
+          const handSize = hand.size();
+          let handSizePenalty = 0;
+          
+          if (handSize <= 1) {
+            // Very risky - large penalty (essentially makes it last resort)
+            handSizePenalty = -300;
+          } else if (handSize <= 2) {
+            // Risky - significant penalty
+            handSizePenalty = -150;
+          } else if (handSize <= 3) {
+            // Moderately risky - moderate penalty
+            handSizePenalty = -75;
+          } else if (handSize <= 4) {
+            // Slight risk - small penalty
+            handSizePenalty = -25;
+          }
+          // No penalty for hand size > 4
+          
+          const combinedValue = baseValue + handSizePenalty;
+          const penaltyNote = handSizePenalty < 0 ? ` (hand size penalty: ${handSizePenalty})` : '';
+          
           options.push({
             card: wildCard,
             placement: placement.placement,
@@ -94,7 +117,7 @@ export class CardPlayEvaluator {
             combinedValue,
             placementValue: placement.value,
             nominationValue: nomination.value,
-            reasoning: `${placement.reasoning} + ${nomination.reasoning}`,
+            reasoning: `${placement.reasoning} + ${nomination.reasoning}${penaltyNote}`,
             type: placement.type
           });
         }

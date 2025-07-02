@@ -1,16 +1,6 @@
 import { AIPlayer } from '../AIPlayer.js';
 import { Player, MoveOptions, GameEngine, Card, Character, BodyPart, Stack, PlayerStateType } from '@npzr/core';
 
-// Mock winston logger to prevent console output during tests
-jest.mock('@npzr/logging', () => ({
-  logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn()
-  }
-}));
-
 describe('AIPlayer Move Coordination', () => {
   let gameEngine: GameEngine;
   let player: Player;

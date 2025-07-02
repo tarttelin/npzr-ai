@@ -21,7 +21,8 @@ describe('CardPlayEvaluator', () => {
 
     // Create mock hand
     mockHand = {
-      getCards: () => []
+      getCards: () => [],
+      size: () => 5 // Mock typical hand size
     } as any;
 
     // Create mock game analysis
