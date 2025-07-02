@@ -1,13 +1,3 @@
-// Mock winston logger to prevent console output during tests
-jest.mock('@npzr/logging', () => ({
-  logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn()
-  }
-}));
-
 import { AIPlayer } from '../AIPlayer.js';
 import { GameEngine, Player, PlayerStateType, Character } from '@npzr/core';
 
