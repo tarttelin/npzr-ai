@@ -26,13 +26,13 @@ let mockGameState: GameState = {
   players: {
     player1: {
       name: 'Player 1',
-      score: 0,
+      score: [],
       handCount: 5,
       isActive: true,
     },
     player2: {
       name: 'Player 2',
-      score: 0,
+      score: [],
       handCount: 5,
       isActive: false,
     },
@@ -46,7 +46,7 @@ const mockUseGameState = {
   startNewGame: jest.fn(),
   pauseGame: jest.fn(),
   switchTurn: jest.fn(),
-  updateScore: jest.fn(),
+  addCompletedCharacter: jest.fn(),
   endGame: jest.fn(),
 };
 
@@ -62,13 +62,13 @@ describe('GamePage', () => {
       players: {
         player1: {
           name: 'Player 1',
-          score: 0,
+          score: [],
           handCount: 5,
           isActive: true,
         },
         player2: {
           name: 'Player 2',
-          score: 0,
+          score: [],
           handCount: 5,
           isActive: false,
         },

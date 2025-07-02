@@ -39,13 +39,13 @@ const mockGameState: GameState = {
   players: {
     player1: {
       name: 'Player 1',
-      score: 0,
+      score: [],
       handCount: 5,
       isActive: true,
     },
     player2: {
       name: 'Player 2',
-      score: 0,
+      score: [],
       handCount: 5,
       isActive: false,
     },

@@ -6,13 +6,13 @@ const mockGameState: GameState = {
   players: {
     player1: {
       name: 'Player 1',
-      score: 2,
+      score: ['robot', 'pirate'], // RP
       handCount: 5,
       isActive: true,
     },
     player2: {
       name: 'Player 2',
-      score: 1,
+      score: ['ninja'], // N
       handCount: 7,
       isActive: false,
     },
@@ -54,8 +54,8 @@ describe('GameHUD', () => {
   it('displays player scores correctly', () => {
     render(<GameHUD {...mockProps} />);
     
-    expect(screen.getByTestId('left-score')).toHaveTextContent('2');
-    expect(screen.getByTestId('right-score')).toHaveTextContent('1');
+    expect(screen.getByTestId('left-score')).toHaveTextContent('RP');
+    expect(screen.getByTestId('right-score')).toHaveTextContent('N');
   });
 
   it('displays player hand counts correctly', () => {

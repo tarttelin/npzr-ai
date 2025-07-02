@@ -2,9 +2,11 @@
  * Type definitions for the NPZR Game UI components
  */
 
+export type CharacterType = 'ninja' | 'pirate' | 'zombie' | 'robot';
+
 export interface PlayerInfo {
   name: string;
-  score: number;
+  score: CharacterType[]; // Array of completed characters
   handCount: number;
   isActive: boolean;
 }
@@ -58,6 +60,6 @@ export interface CanvasSize {
 }
 
 export interface GameAction {
-  type: 'NEW_GAME' | 'SWITCH_TURN' | 'UPDATE_SCORE' | 'END_GAME' | 'PAUSE_GAME';
+  type: 'NEW_GAME' | 'SWITCH_TURN' | 'ADD_COMPLETED_CHARACTER' | 'END_GAME' | 'PAUSE_GAME';
   payload?: any;
 }

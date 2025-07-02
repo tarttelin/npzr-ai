@@ -111,6 +111,12 @@
   color: #212121;
 }
 
+.player-panel__characters {
+  letter-spacing: 2px;
+  min-width: 40px;
+  text-align: center;
+}
+
 .player-panel--active .player-panel__stat-value {
   color: #1976D2;
 }

@@ -1,5 +1,5 @@
 import { useReducer, useCallback } from 'react';
-import { GameState, GameAction } from '../types/GameUI.types';
+import { GameState, GameAction, CharacterType } from '../types/GameUI.types';
 
 /**
  * Initial game state with mock data for Phase 1
@@ -8,13 +8,13 @@ const initialGameState: GameState = {
   players: {
     player1: {
       name: 'Player 1',
-      score: 0,
+      score: [], // Start with no completed characters
       handCount: 5,
       isActive: true,
     },
     player2: {
       name: 'Player 2',
-      score: 0,
+      score: [], // Start with no completed characters
       handCount: 5,
       isActive: false,
     },
@@ -53,15 +53,22 @@ function gameStateReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
-    case 'UPDATE_SCORE': {
-      const { player, score } = action.payload;
+    case 'ADD_COMPLETED_CHARACTER': {
+      const { player, character } = action.payload;
+      const currentPlayer = state.players[player as keyof typeof state.players];
+      
+      // Don't add if character is already completed
+      if (currentPlayer.score.includes(character)) {
+        return state;
+      }
+      
       return {
         ...state,
         players: {
           ...state.players,
           [player]: {
-            ...state.players[player as keyof typeof state.players],
-            score,
+            ...currentPlayer,
+            score: [...currentPlayer.score, character],
           },
         },
       };
@@ -121,8 +128,8 @@ export function useGameState() {
     dispatch({ type: 'SWITCH_TURN' });
   }, []);
 
-  const updateScore = useCallback((player: 'player1' | 'player2', score: number) => {
-    dispatch({ type: 'UPDATE_SCORE', payload: { player, score } });
+  const addCompletedCharacter = useCallback((player: 'player1' | 'player2', character: CharacterType) => {
+    dispatch({ type: 'ADD_COMPLETED_CHARACTER', payload: { player, character } });
   }, []);
 
   const endGame = useCallback((winner: 'player1' | 'player2' | 'draw') => {
@@ -137,7 +144,7 @@ export function useGameState() {
     gameState,
     startNewGame,
     switchTurn,
-    updateScore,
+    addCompletedCharacter,
     endGame,
     pauseGame,
   };

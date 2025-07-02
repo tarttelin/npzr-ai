@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { PlayerPanel } from './PlayerPanel';
-import { PlayerInfo } from '../../../types/GameUI.types';
+import { PlayerInfo, CharacterType } from '../../../types/GameUI.types';
 
 const mockPlayer: PlayerInfo = {
   name: 'Test Player',
-  score: 3,
+  score: ['robot', 'pirate', 'ninja'], // RPN
   handCount: 6,
   isActive: true,
 };
@@ -40,7 +40,7 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-score')).toHaveTextContent('3');
+    expect(screen.getByTestId('left-score')).toHaveTextContent('RPN');
   });
 
   it('displays player hand count correctly', () => {
@@ -132,31 +132,34 @@ describe('PlayerPanel', () => {
         position="right" 
       />
     );
-    expect(screen.getByTestId('right-score')).toHaveTextContent('3');
+    expect(screen.getByTestId('right-score')).toHaveTextContent('RPN');
     expect(screen.getByTestId('right-hand-count')).toHaveTextContent('6');
   });
 
-  it('handles zero score correctly', () => {
-    const zeroScorePlayer = { ...mockPlayer, score: 0 };
+  it('handles empty score correctly', () => {
+    const noScorePlayer = { ...mockPlayer, score: [] };
     render(
       <PlayerPanel 
-        player={zeroScorePlayer} 
+        player={noScorePlayer} 
         isCurrentPlayer={true} 
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-score')).toHaveTextContent('0');
+    expect(screen.getByTestId('left-score')).toHaveTextContent('—');
   });
 
-  it('handles high scores correctly', () => {
-    const highScorePlayer = { ...mockPlayer, score: 999 };
+  it('handles multiple same characters correctly', () => {
+    const multipleScorePlayer: PlayerInfo = { 
+      ...mockPlayer, 
+      score: ['robot', 'pirate', 'ninja', 'pirate'] as CharacterType[]
+    }; // RPNP
     render(
       <PlayerPanel 
-        player={highScorePlayer} 
+        player={multipleScorePlayer} 
         isCurrentPlayer={true} 
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-score')).toHaveTextContent('999');
+    expect(screen.getByTestId('left-score')).toHaveTextContent('RPNP');
   });
 });

@@ -4,7 +4,7 @@ import { PlayerInfo } from '../../../types/GameUI.types';
 
 const mockPlayer: PlayerInfo = {
   name: 'Test Player',
-  score: 2,
+  score: ['robot', 'pirate'],
   handCount: 5,
   isActive: true,
 };

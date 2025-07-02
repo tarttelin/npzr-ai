@@ -9,13 +9,13 @@ describe('useGameState', () => {
       players: {
         player1: {
           name: 'Player 1',
-          score: 0,
+          score: [],
           handCount: 5,
           isActive: true,
         },
         player2: {
           name: 'Player 2',
-          score: 0,
+          score: [],
           handCount: 5,
           isActive: false,
         },
@@ -30,7 +30,7 @@ describe('useGameState', () => {
     
     expect(typeof result.current.startNewGame).toBe('function');
     expect(typeof result.current.switchTurn).toBe('function');
-    expect(typeof result.current.updateScore).toBe('function');
+    expect(typeof result.current.addCompletedCharacter).toBe('function');
     expect(typeof result.current.endGame).toBe('function');
     expect(typeof result.current.pauseGame).toBe('function');
   });
@@ -75,22 +75,23 @@ describe('useGameState', () => {
     expect(result.current.gameState.players.player2.isActive).toBe(false);
   });
 
-  it('updates player scores correctly', () => {
+  it('adds completed characters correctly', () => {
     const { result } = renderHook(() => useGameState());
     
     act(() => {
-      result.current.updateScore('player1', 3);
+      result.current.addCompletedCharacter('player1', 'robot');
     });
     
-    expect(result.current.gameState.players.player1.score).toBe(3);
-    expect(result.current.gameState.players.player2.score).toBe(0);
+    expect(result.current.gameState.players.player1.score).toEqual(['robot']);
+    expect(result.current.gameState.players.player2.score).toEqual([]);
     
     act(() => {
-      result.current.updateScore('player2', 2);
+      result.current.addCompletedCharacter('player1', 'pirate');
+      result.current.addCompletedCharacter('player2', 'ninja');
     });
     
-    expect(result.current.gameState.players.player1.score).toBe(3);
-    expect(result.current.gameState.players.player2.score).toBe(2);
+    expect(result.current.gameState.players.player1.score).toEqual(['robot', 'pirate']);
+    expect(result.current.gameState.players.player2.score).toEqual(['ninja']);
   });
 
   it('ends game correctly', () => {
@@ -132,17 +133,30 @@ describe('useGameState', () => {
     expect(result.current.gameState.players.player2.isActive).toBe(false);
   });
 
-  it('handles multiple score updates', () => {
+  it('prevents duplicate characters from being added', () => {
     const { result } = renderHook(() => useGameState());
     
     act(() => {
-      result.current.updateScore('player1', 1);
-      result.current.updateScore('player1', 2);
-      result.current.updateScore('player2', 3);
+      result.current.addCompletedCharacter('player1', 'robot');
+      result.current.addCompletedCharacter('player1', 'robot'); // duplicate
+      result.current.addCompletedCharacter('player1', 'pirate');
     });
     
-    expect(result.current.gameState.players.player1.score).toBe(2);
-    expect(result.current.gameState.players.player2.score).toBe(3);
+    expect(result.current.gameState.players.player1.score).toEqual(['robot', 'pirate']);
+  });
+
+  it('handles multiple character completions', () => {
+    const { result } = renderHook(() => useGameState());
+    
+    act(() => {
+      result.current.addCompletedCharacter('player1', 'ninja');
+      result.current.addCompletedCharacter('player1', 'pirate');
+      result.current.addCompletedCharacter('player2', 'zombie');
+      result.current.addCompletedCharacter('player2', 'robot');
+    });
+    
+    expect(result.current.gameState.players.player1.score).toEqual(['ninja', 'pirate']);
+    expect(result.current.gameState.players.player2.score).toEqual(['zombie', 'robot']);
   });
 
   it('can end game with different winners', () => {
@@ -172,16 +186,17 @@ describe('useGameState', () => {
     // Complex sequence of operations
     act(() => {
       result.current.startNewGame();
-      result.current.updateScore('player1', 1);
+      result.current.addCompletedCharacter('player1', 'ninja');
       result.current.switchTurn();
-      result.current.updateScore('player2', 2);
+      result.current.addCompletedCharacter('player2', 'robot');
+      result.current.addCompletedCharacter('player2', 'pirate');
       result.current.switchTurn();
     });
     
     expect(result.current.gameState.gamePhase).toBe('playing');
     expect(result.current.gameState.currentTurn).toBe('player1');
-    expect(result.current.gameState.players.player1.score).toBe(1);
-    expect(result.current.gameState.players.player2.score).toBe(2);
+    expect(result.current.gameState.players.player1.score).toEqual(['ninja']);
+    expect(result.current.gameState.players.player2.score).toEqual(['robot', 'pirate']);
     expect(result.current.gameState.players.player1.isActive).toBe(true);
     expect(result.current.gameState.players.player2.isActive).toBe(false);
   });

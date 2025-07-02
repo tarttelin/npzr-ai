@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlayerPanelProps } from '../../../types/GameUI.types';
+import { formatCompletedCharacters } from '../../../utils/characterUtils';
 import './PlayerPanel.css';
 
 /**
@@ -35,9 +36,9 @@ export const PlayerPanel: React.FC<PlayerPanelProps> = ({
       
       <div className="player-panel__stats">
         <div className="player-panel__stat">
-          <span className="player-panel__stat-label">Score</span>
-          <span className="player-panel__stat-value" data-testid={`${position}-score`}>
-            {player.score}
+          <span className="player-panel__stat-label">Completed</span>
+          <span className="player-panel__stat-value player-panel__characters" data-testid={`${position}-score`}>
+            {formatCompletedCharacters(player.score) || '—'}
           </span>
         </div>
         
