@@ -5,6 +5,7 @@ import { Layout } from './components/Layout/Layout';
 import { HomePage } from './pages/HomePage/HomePage';
 import { GamePage } from './pages/GamePage/GamePage';
 import { RulesPage } from './pages/RulesPage/RulesPage';
+import { CharacterFontsDemo } from './components/CharacterFontsDemo';
 import './App.css';
 
 export const App: React.FC = () => {
@@ -16,6 +17,7 @@ export const App: React.FC = () => {
             <Route path="/" component={HomePage} />
             <Route path="/game" component={GamePage} />
             <Route path="/rules" component={RulesPage} />
+            <Route path="/fonts" component={() => <CharacterFontsDemo />} />
             
             {/* 404 route */}
             <Route>

@@ -43,3 +43,73 @@ export function getCharacterColor(character: CharacterType): string {
       return '#666666'; // Default gray
   }
 }
+
+/**
+ * Get the font class for a character type
+ */
+export function getCharacterFontClass(character: CharacterType): string {
+  switch (character) {
+    case 'ninja':
+      return 'font-ninja';
+    case 'pirate':
+      return 'font-pirate';
+    case 'zombie':
+      return 'font-zombie';
+    case 'robot':
+      return 'font-robot';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Get the theme class for a character type
+ */
+export function getCharacterThemeClass(character: CharacterType): string {
+  switch (character) {
+    case 'ninja':
+      return 'ninja-theme';
+    case 'pirate':
+      return 'pirate-theme';
+    case 'zombie':
+      return 'zombie-theme';
+    case 'robot':
+      return 'robot-theme';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Get the text effect class for a character type
+ */
+export function getCharacterTextEffectClass(character: CharacterType): string {
+  switch (character) {
+    case 'ninja':
+      return 'ninja-text-effect';
+    case 'pirate':
+      return 'pirate-text-effect';
+    case 'zombie':
+      return 'zombie-text-effect';
+    case 'robot':
+      return 'robot-text-effect';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Get all character styling classes combined
+ */
+export function getCharacterClasses(character: CharacterType, includeEffects = true): string {
+  const classes = [
+    getCharacterFontClass(character),
+    getCharacterThemeClass(character),
+  ];
+  
+  if (includeEffects) {
+    classes.push(getCharacterTextEffectClass(character));
+  }
+  
+  return classes.filter(Boolean).join(' ');
+}
