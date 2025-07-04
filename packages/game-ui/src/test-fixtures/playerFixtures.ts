@@ -39,35 +39,6 @@ export function createPlayerStateInfo(overrides: Partial<PlayerStateInfo> = {}):
   };
 }
 
-/**
- * Creates a human player in draw card state
- */
-export function createHumanPlayer(): PlayerStateInfo {
-  return createPlayerStateInfo({
-    name: 'Human Player',
-    state: PlayerStateType.DRAW_CARD,
-    isMyTurn: true,
-    canDraw: true,
-    canPlay: false,
-    canMove: false,
-    canNominate: false
-  });
-}
-
-/**
- * Creates an AI player waiting for opponent
- */
-export function createAIPlayer(): PlayerStateInfo {
-  return createPlayerStateInfo({
-    name: 'AI Opponent',
-    state: PlayerStateType.WAITING_FOR_OPPONENT,
-    isMyTurn: false,
-    canDraw: false,
-    canPlay: false,
-    canMove: false,
-    canNominate: false
-  });
-}
 
 function getStateMessage(state: PlayerStateType): string {
   const messages = {
