@@ -95,6 +95,13 @@ export class GameplayScene extends PIXI.Container {
   }
 
   /**
+   * Get the deck sprite for external access
+   */
+  getDeckSprite(): DeckSprite {
+    return this.deckSprite;
+  }
+
+  /**
    * Handle canvas resize
    */
   onResize(_width: number, _height: number): void {

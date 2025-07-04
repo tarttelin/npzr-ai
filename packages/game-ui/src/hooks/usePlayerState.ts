@@ -43,6 +43,7 @@ export function usePlayerState(
   winner: Player | null
 ): UsePlayerStateReturn {
   const [error, setError] = useState<string | null>(null);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   /**
    * Convert core Character enum to UI CharacterType
@@ -107,14 +108,14 @@ export function usePlayerState(
       player1: transformPlayer(players[0]),
       player2: transformPlayer(players[1])
     };
-  }, [players, transformPlayer]);
+  }, [players, transformPlayer, forceUpdate]);
 
   /**
    * Current player state
    */
   const currentPlayerState = useMemo(() => {
     return transformPlayer(currentPlayer);
-  }, [currentPlayer, transformPlayer]);
+  }, [currentPlayer, transformPlayer, forceUpdate]);
 
   /**
    * Game phase determination
@@ -144,6 +145,9 @@ export function usePlayerState(
     try {
       setError(null);
       currentPlayer.drawCard();
+      
+      // Force UI update after state change
+      setForceUpdate(prev => prev + 1);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to draw card';
       setError(errorMessage);
@@ -163,6 +167,9 @@ export function usePlayerState(
     try {
       setError(null);
       currentPlayer.playCard(card, options);
+      
+      // Force UI update after state change
+      setForceUpdate(prev => prev + 1);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to play card';
       setError(errorMessage);
@@ -188,6 +195,9 @@ export function usePlayerState(
     try {
       setError(null);
       currentPlayer.moveCard(options);
+      
+      // Force UI update after state change
+      setForceUpdate(prev => prev + 1);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to move card';
       setError(errorMessage);
@@ -207,6 +217,9 @@ export function usePlayerState(
     try {
       setError(null);
       currentPlayer.nominateWildCard(card, nomination);
+      
+      // Force UI update after state change
+      setForceUpdate(prev => prev + 1);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to nominate wild card';
       setError(errorMessage);

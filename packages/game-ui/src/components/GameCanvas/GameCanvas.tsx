@@ -109,10 +109,15 @@ export const CoreGameCanvas: React.FC<CoreGameCanvasProps> = ({
   useEffect(() => {
     if (!eventBridge) return;
 
-    // Listen for deck click to draw card
+    // Listen for deck click - only draw if player can draw
     const handleDeckClick = () => {
       if (currentPlayer && currentPlayer.getName().includes('Human')) {
-        gameActions.drawCard();
+        const playerState = currentPlayer.getState();
+        
+        if (playerState.canDrawCard()) {
+          gameActions.drawCard();
+        }
+        // Note: When player can't draw, deck is visually disabled (gray) and click is ignored
       }
     };
 
@@ -184,10 +189,19 @@ export const CoreGameCanvas: React.FC<CoreGameCanvasProps> = ({
       });
     }
 
-    // Update valid move highlights
+    // Update deck clickable state and move highlights
     if (currentPlayer && currentPlayer.getName().includes('Human')) {
-      // Highlight valid moves based on current player state
+      // Update deck clickable state based on current player state
       const playerState = currentPlayer.getState();
+      const canDraw = playerState.canDrawCard();
+      
+      if (scene && typeof scene.getDeckSprite === 'function') {
+        // Access the deck sprite and update its clickable state
+        const deckSprite = scene.getDeckSprite();
+        if (deckSprite && typeof deckSprite.setClickable === 'function') {
+          deckSprite.setClickable(canDraw);
+        }
+      }
       
       if (playerState.canPlayCard()) {
         eventBridge?.emitToCanvas('ui:highlightValidMoves', { 

@@ -18,40 +18,7 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<GameplayScene | null>(null);
   const eventBridgeRef = useRef<EventBridge | null>(null);
-
-  /**
-   * Initialize PixiJS application with new architecture
-   */
-  const initializeApp = useCallback(async () => {
-    if (!containerRef.current || canvasAppRef.current) return;
-
-    try {
-      // Calculate responsive canvas size
-      const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(width, height);
-
-      // Create canvas application
-      const canvasApp = new CanvasApplication();
-      await canvasApp.init(containerRef.current, canvasWidth, canvasHeight);
-      canvasAppRef.current = canvasApp;
-
-      // Create gameplay scene
-      const scene = new GameplayScene(canvasApp);
-      canvasApp.addToStage(scene);
-      sceneRef.current = scene;
-
-      // Setup event bridge
-      const eventBridge = EventBridge.getInstance();
-      eventBridgeRef.current = eventBridge;
-
-      // Setup scene event handlers
-      setupSceneEvents(scene, eventBridge);
-
-      // Trigger resize callback
-      onResize?.(canvasWidth, canvasHeight);
-    } catch (error) {
-      console.error('Failed to initialize PixiJS application:', error);
-    }
-  }, [width, height, onResize, setupSceneEvents]);
+  const initializingRef = useRef<boolean>(false);
 
   /**
    * Setup scene event handlers
@@ -77,6 +44,60 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
   }, []);
 
   /**
+   * Initialize PixiJS application with new architecture
+   */
+  const initializeApp = useCallback(async () => {
+    // Prevent multiple simultaneous initializations (React StrictMode protection)
+    if (!containerRef.current || canvasAppRef.current || initializingRef.current) {
+      // Skip initialization if already in progress or completed
+      return;
+    }
+
+    initializingRef.current = true;
+
+    // Ensure any existing app is properly cleaned up first
+    if (canvasAppRef.current) {
+      canvasAppRef.current.destroy();
+      canvasAppRef.current = null;
+    }
+
+    try {
+      // Use current dimensions from props - avoiding dependency issues
+      const currentWidth = width;
+      const currentHeight = height;
+      
+      // Calculate responsive canvas size
+      const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(currentWidth, currentHeight);
+
+      // Create canvas application
+      const canvasApp = new CanvasApplication();
+      await canvasApp.init(containerRef.current, canvasWidth, canvasHeight);
+      canvasAppRef.current = canvasApp;
+
+      // Create gameplay scene
+      const scene = new GameplayScene(canvasApp);
+      canvasApp.addToStage(scene);
+      sceneRef.current = scene;
+
+      // Setup event bridge
+      const eventBridge = EventBridge.getInstance();
+      eventBridgeRef.current = eventBridge;
+
+      // Setup scene event handlers
+      setupSceneEvents(scene, eventBridge);
+
+      // Trigger resize callback if provided
+      if (onResize) {
+        onResize(canvasWidth, canvasHeight);
+      }
+    } catch (error) {
+      console.error('Failed to initialize PixiJS application:', error);
+    } finally {
+      initializingRef.current = false;
+    }
+  }, []);
+
+  /**
    * Resize PixiJS application
    */
   const resizeApp = useCallback((newWidth: number, newHeight: number) => {
@@ -98,6 +119,8 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
    * Cleanup PixiJS application
    */
   const cleanup = useCallback(() => {
+    initializingRef.current = false;
+    
     if (sceneRef.current) {
       sceneRef.current.destroy();
       sceneRef.current = null;
@@ -110,20 +133,33 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
       eventBridgeRef.current.destroy();
       eventBridgeRef.current = null;
     }
+    // Cleanup completed
   }, []);
 
-  // Initialize app on mount
+  // Initialize app on mount (only once)
   useEffect(() => {
+    // Initialize PixiJS application once on mount
     initializeApp();
     return cleanup;
-  }, [initializeApp, cleanup]);
+  }, []); // Empty dependency array - only run once on mount
 
-  // Handle resize
+  // Handle resize when dimensions change
   useEffect(() => {
-    if (canvasAppRef.current) {
-      resizeApp(width, height);
+    if (canvasAppRef.current && sceneRef.current) {
+      const { width: canvasWidth, height: canvasHeight } = calculateCanvasSize(width, height);
+      
+      // Resize the canvas application
+      canvasAppRef.current.resize(canvasWidth, canvasHeight);
+      
+      // Update scene layout
+      sceneRef.current.onResize(canvasWidth, canvasHeight);
+
+      // Trigger resize callback if provided
+      if (onResize) {
+        onResize(canvasWidth, canvasHeight);
+      }
     }
-  }, [width, height, resizeApp]);
+  }, [width, height]); // Only depend on width/height, not functions
 
   return {
     containerRef,
