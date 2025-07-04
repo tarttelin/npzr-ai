@@ -224,6 +224,30 @@ The engine maintains consistency through:
 - Strategic analysis with threat level assessment
 - Comprehensive game state validation
 
+## Sprite Sheet Reference
+
+### Character Sprite Coordinates
+The sprite sheet (`public/img/sprite-sheet-padded.png`) contains 4 characters × 3 body parts in a uniform grid. Head tiles are trimmed to **max 150px wide × 90px tall** (solid content only, excluding transparent padding).
+
+**Head Tiles (trimmed to match torso/legs height):**
+- **Ninja Head**: (x: 20, y: 10, width: 280, height: 190)
+- **Pirate Head**: (x: 340, y: 10, width: 280, height: 190)  
+- **Zombie Head**: (x: 660, y: 10, width: 280, height: 190)
+- **Robot Head**: (x: 980, y: 10, width: 280, height: 190)
+
+**Torso Tiles:**
+- **Ninja Torso**: (x: 20, y: 260, width: 280, height: 190)
+- **Pirate Torso**: (x: 340, y: 260, width: 280, height: 190)
+- **Zombie Torso**: (x: 660, y: 260, width: 280, height: 190)
+- **Robot Torso**: (x: 980, y: 260, width: 280, height: 190)
+
+**Legs Tiles:**
+- **Ninja Legs**: (x: 20, y: 510, width: 280, height: 190)
+- **Pirate Legs**: (x: 340, y: 510, width: 280, height: 190)
+- **Zombie Legs**: (x: 660, y: 510, width: 280, height: 190)
+- **Robot Legs**: (x: 980, y: 510, width: 280, height: 190)
+
+
 ## Working with the Codebase
 
 ### Adding New Features

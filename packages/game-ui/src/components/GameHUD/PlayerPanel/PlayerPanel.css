@@ -1,0 +1,142 @@
+/* PlayerPanel Component Styles */
+
+.player-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  min-width: 160px;
+  border: 2px solid transparent;
+}
+
+.player-panel--active {
+  border-color: #1976D2;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.2);
+}
+
+.player-panel--inactive {
+  opacity: 0.8;
+}
+
+.player-panel--left {
+  text-align: left;
+}
+
+.player-panel--right {
+  text-align: right;
+}
+
+.player-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.player-panel--right .player-panel__header {
+  flex-direction: row-reverse;
+}
+
+.player-panel__name {
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #212121;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.player-panel__turn-indicator {
+  color: #1976D2;
+  font-size: 12px;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+  margin-left: 8px;
+}
+
+.player-panel--right .player-panel__turn-indicator {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.player-panel__stats {
+  display: flex;
+  gap: 16px;
+}
+
+.player-panel--right .player-panel__stats {
+  justify-content: flex-end;
+}
+
+.player-panel__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-panel--left .player-panel__stat {
+  align-items: flex-start;
+}
+
+.player-panel--right .player-panel__stat {
+  align-items: flex-end;
+}
+
+.player-panel__stat-label {
+  font-family: 'Roboto', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.player-panel__stat-value {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #212121;
+}
+
+.player-panel__characters {
+  letter-spacing: 2px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.player-panel--active .player-panel__stat-value {
+  color: #1976D2;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .player-panel {
+    padding: 12px;
+    min-width: 120px;
+  }
+  
+  .player-panel__name {
+    font-size: 14px;
+  }
+  
+  .player-panel__stats {
+    gap: 12px;
+  }
+  
+  .player-panel__stat-value {
+    font-size: 16px;
+  }
+}

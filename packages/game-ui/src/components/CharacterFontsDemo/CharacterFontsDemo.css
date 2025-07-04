@@ -1,0 +1,211 @@
+/* Character Fonts Demo Styles */
+
+.character-fonts-demo {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.demo-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.demo-title {
+  font-size: 3rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.demo-subtitle {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-style: italic;
+  margin: 0;
+}
+
+.characters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.character-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  border: 3px solid transparent;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.character-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  border-color: var(--character-color);
+}
+
+.character-letter-display {
+  margin-bottom: 1.5rem;
+}
+
+.character-letter {
+  font-size: 4rem;
+  line-height: 1;
+  display: inline-block;
+  padding: 0.5rem;
+  border-radius: 12px;
+  min-width: 80px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.character-info {
+  text-align: center;
+}
+
+.character-name {
+  font-size: 2rem;
+  margin: 0.5rem 0;
+  line-height: 1.2;
+}
+
+.character-name.font-ninja {
+  font-size: 2.2rem;
+}
+
+.character-name.font-pirate {
+  font-size: 2.5rem;
+}
+
+.character-name.font-zombie {
+  font-size: 2.3rem;
+}
+
+.character-name.font-robot {
+  font-size: 1.8rem;
+}
+
+.character-description {
+  font-size: 1rem;
+  margin: 0.5rem 0 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.character-description.font-ninja {
+  font-weight: 600;
+}
+
+.character-description.font-pirate {
+  font-size: 1.1rem;
+}
+
+.character-description.font-zombie {
+  font-size: 0.9rem;
+}
+
+.character-description.font-robot {
+  font-size: 0.95rem;
+}
+
+.demo-controls {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.demo-controls h3 {
+  color: white;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.font-specs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.spec-item {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.spec-item strong {
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .character-fonts-demo {
+    padding: 1.5rem;
+  }
+  
+  .demo-title {
+    font-size: 2rem;
+  }
+  
+  .characters-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .character-letter {
+    font-size: 3rem;
+    min-width: 60px;
+    min-height: 60px;
+  }
+  
+  .character-name {
+    font-size: 1.5rem;
+  }
+  
+  .character-name.font-ninja {
+    font-size: 1.7rem;
+  }
+  
+  .character-name.font-pirate {
+    font-size: 1.8rem;
+  }
+  
+  .character-name.font-zombie {
+    font-size: 1.6rem;
+  }
+  
+  .character-name.font-robot {
+    font-size: 1.4rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .character-card {
+    background: white;
+    border: 2px solid black;
+  }
+  
+  .demo-controls {
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+}

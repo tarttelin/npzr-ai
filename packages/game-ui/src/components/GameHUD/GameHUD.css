@@ -1,0 +1,92 @@
+/* GameHUD Component Styles */
+
+.game-hud {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  grid-template-areas: "left center right controls";
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  height: 120px;
+  box-sizing: border-box;
+}
+
+.game-hud__section {
+  display: flex;
+  align-items: center;
+}
+
+.game-hud__section--left {
+  grid-area: left;
+  justify-content: flex-start;
+}
+
+.game-hud__section--center {
+  grid-area: center;
+  justify-content: center;
+}
+
+.game-hud__section--right {
+  grid-area: right;
+  justify-content: flex-end;
+}
+
+.game-hud__section--controls {
+  grid-area: controls;
+  justify-content: flex-end;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .game-hud {
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas: 
+      "left center right"
+      "controls controls controls";
+    gap: 16px;
+    height: auto;
+    min-height: 120px;
+    padding: 16px 20px;
+  }
+  
+  .game-hud__section--controls {
+    justify-content: center;
+    padding-top: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-hud {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "left right"
+      "center center"
+      "controls controls";
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  
+  .game-hud__section--center {
+    padding-top: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-hud {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "center"
+      "left"
+      "right"
+      "controls";
+    gap: 12px;
+    padding: 12px;
+  }
+  
+  .game-hud__section {
+    justify-content: center;
+  }
+}

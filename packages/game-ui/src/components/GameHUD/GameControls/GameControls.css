@@ -1,0 +1,82 @@
+/* GameControls Component Styles */
+
+.game-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.game-controls__button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  outline: none;
+}
+
+.game-controls__button:focus {
+  outline: 2px solid #1976D2;
+  outline-offset: 2px;
+}
+
+.game-controls__button--primary {
+  background: #1976D2;
+  color: #FFFFFF;
+}
+
+.game-controls__button--primary:hover:not(:disabled) {
+  background: #1565C0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+}
+
+.game-controls__button--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
+}
+
+.game-controls__button--secondary {
+  background: rgba(255, 255, 255, 0.9);
+  color: #757575;
+  border: 1px solid #E0E0E0;
+}
+
+.game-controls__button--secondary:hover:not(:disabled) {
+  background: #FFFFFF;
+  color: #212121;
+  border-color: #BDBDBD;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.game-controls__button--secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-controls__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .game-controls {
+    gap: 8px;
+  }
+  
+  .game-controls__button {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-width: 70px;
+  }
+}
