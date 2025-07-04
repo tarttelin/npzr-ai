@@ -88,7 +88,7 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
   const createNewGame = useCallback(() => {
     // Cleanup existing game
     if (gameStateUpdateIntervalRef.current) {
-      clearInterval(gameStateUpdateIntervalRef.current);
+      window.clearInterval(gameStateUpdateIntervalRef.current);
     }
     aiPlayerRef.current = null;
     
@@ -167,14 +167,14 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
     if (!gameEngine || !isInitialized) return;
 
     // Poll game state every 100ms for responsive updates
-    gameStateUpdateIntervalRef.current = setInterval(updateGameState, 100);
+    gameStateUpdateIntervalRef.current = window.setInterval(updateGameState, 100);
     
     // Initial update
     updateGameState();
 
     return () => {
       if (gameStateUpdateIntervalRef.current) {
-        clearInterval(gameStateUpdateIntervalRef.current);
+        window.clearInterval(gameStateUpdateIntervalRef.current);
       }
     };
   }, [gameEngine, isInitialized, updateGameState]);
@@ -185,7 +185,7 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
   useEffect(() => {
     return () => {
       if (gameStateUpdateIntervalRef.current) {
-        clearInterval(gameStateUpdateIntervalRef.current);
+        window.clearInterval(gameStateUpdateIntervalRef.current);
       }
       aiPlayerRef.current = null;
     };
