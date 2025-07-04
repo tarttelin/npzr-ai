@@ -6,7 +6,7 @@ Follow these steps:
 2. Understand the problem described in the issue
 3. Search the codebase for relevant files
 4. Create a new local branch with a name derived from the issue name
-5. Implement the necessary changes to fix the issue
+5. Implement the necessary changes to fix the issue. Breaking changes are okay, no need to maintain backwards compatibility.
 6. Write and run tests to verify the fix
 7. Ensure code passes linting and type checking
 8. Create a descriptive commit message

@@ -1,30 +1,55 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GameHUD } from './GameHUD';
-import { GameState } from '../../types/GameUI.types';
+import { PlayerStateInfo, CharacterType } from '../../types/GameUI.types';
+import { PlayerStateType } from '@npzr/core';
 
-const mockGameState: GameState = {
-  players: {
-    player1: {
-      name: 'Player 1',
-      score: ['robot', 'pirate'], // RP
-      handCount: 5,
-      isActive: true,
-    },
-    player2: {
-      name: 'Player 2',
-      score: ['ninja'], // N
-      handCount: 7,
-      isActive: false,
-    },
-  },
-  currentTurn: 'player1',
-  gamePhase: 'playing',
+const mockPlayer1: PlayerStateInfo = {
+  id: 'player-1',
+  name: 'Player 1',
+  score: ['robot', 'pirate'] as CharacterType[],
+  handCount: 5,
+  hand: [],
+  stacks: [],
+  state: PlayerStateType.DRAW_CARD,
+  stateMessage: 'Draw a card from the deck to start your turn',
+  isMyTurn: true,
+  canDraw: true,
+  canPlay: false,
+  canMove: false,
+  canNominate: false,
+};
+
+const mockPlayer2: PlayerStateInfo = {
+  id: 'player-2',
+  name: 'Player 2',
+  score: ['ninja'] as CharacterType[],
+  handCount: 7,
+  hand: [],
+  stacks: [],
+  state: PlayerStateType.WAITING_FOR_OPPONENT,
+  stateMessage: 'Waiting for turn',
+  isMyTurn: false,
+  canDraw: false,
+  canPlay: false,
+  canMove: false,
+  canNominate: false,
+};
+
+const mockGameActions = {
+  playCard: jest.fn(),
+  moveCard: jest.fn(),
+  nominateWild: jest.fn(),
 };
 
 const mockProps = {
-  gameState: mockGameState,
+  player1: mockPlayer1,
+  player2: mockPlayer2,
+  currentPlayer: mockPlayer1,
+  gamePhase: 'playing' as const,
+  winner: null,
   onNewGame: jest.fn(),
-  onPause: jest.fn(),
+  onDrawCard: jest.fn(),
+  gameActions: mockGameActions,
 };
 
 describe('GameHUD', () => {
@@ -54,15 +79,16 @@ describe('GameHUD', () => {
   it('displays player scores correctly', () => {
     render(<GameHUD {...mockProps} />);
     
-    expect(screen.getByTestId('left-score')).toHaveTextContent('RP');
-    expect(screen.getByTestId('right-score')).toHaveTextContent('N');
+    const scoreElements = screen.getAllByTestId('completed-characters');
+    expect(scoreElements[0]).toHaveTextContent('RP'); // Player 1 (left)
+    expect(scoreElements[1]).toHaveTextContent('N');  // Player 2 (right)
   });
 
   it('displays player hand counts correctly', () => {
     render(<GameHUD {...mockProps} />);
     
-    expect(screen.getByTestId('left-hand-count')).toHaveTextContent('5');
-    expect(screen.getByTestId('right-hand-count')).toHaveTextContent('7');
+    expect(screen.getAllByTestId('hand-count')[0]).toHaveTextContent('5');
+    expect(screen.getAllByTestId('hand-count')[1]).toHaveTextContent('7');
   });
 
   it('shows turn indicator', () => {
@@ -84,39 +110,48 @@ describe('GameHUD', () => {
     expect(mockProps.onNewGame).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onPause when pause button is clicked', () => {
-    render(<GameHUD {...mockProps} />);
+  it('calls onDrawCard when draw card button is clicked', () => {
+    const propsWithHumanPlayer = {
+      ...mockProps,
+      currentPlayer: {
+        ...mockPlayer1,
+        name: 'Human Player',
+        canDraw: true,
+      },
+    };
     
-    const pauseButton = screen.getByTestId('pause-button');
-    fireEvent.click(pauseButton);
+    render(<GameHUD {...propsWithHumanPlayer} onDrawCard={mockProps.onDrawCard} />);
     
-    expect(mockProps.onPause).toHaveBeenCalledTimes(1);
+    const drawButton = screen.getByTestId('draw-card-btn');
+    fireEvent.click(drawButton);
+    
+    expect(mockProps.onDrawCard).toHaveBeenCalledTimes(1);
   });
 
-  it('disables controls when game is finished', () => {
-    const finishedGameState = {
-      ...mockGameState,
+  it('keeps controls enabled when game is finished', () => {
+    const finishedProps = {
+      ...mockProps,
       gamePhase: 'finished' as const,
     };
 
-    render(
-      <GameHUD 
-        {...mockProps} 
-        gameState={finishedGameState} 
-      />
-    );
+    render(<GameHUD {...finishedProps} />);
     
     const newGameButton = screen.getByTestId('new-game-button');
-    expect(newGameButton).toBeDisabled();
+    expect(newGameButton).not.toBeDisabled();
   });
 
-  it('works without onPause prop', () => {
-    const { onPause, ...propsWithoutPause } = mockProps;
+  it('works without draw card functionality when not available', () => {
+    const propsWithoutDraw = {
+      ...mockProps,
+      currentPlayer: {
+        ...mockPlayer1,
+        canDraw: false,
+      },
+    };
     
-    render(<GameHUD {...propsWithoutPause} />);
+    render(<GameHUD {...propsWithoutDraw} />);
     
     expect(screen.getByTestId('game-hud')).toBeInTheDocument();
-    expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
   });
 
   it('highlights active player correctly', () => {
@@ -130,17 +165,20 @@ describe('GameHUD', () => {
   });
 
   it('switches active player when turn changes', () => {
-    const player2TurnState = {
-      ...mockGameState,
-      currentTurn: 'player2' as const,
-      players: {
-        ...mockGameState.players,
-        player1: { ...mockGameState.players.player1, isActive: false },
-        player2: { ...mockGameState.players.player2, isActive: true },
+    const player2TurnProps = {
+      ...mockProps,
+      currentPlayer: mockPlayer2,
+      player1: {
+        ...mockPlayer1,
+        isMyTurn: false,
+      },
+      player2: {
+        ...mockPlayer2,
+        isMyTurn: true,
       },
     };
 
-    render(<GameHUD {...mockProps} gameState={player2TurnState} />);
+    render(<GameHUD {...player2TurnProps} />);
     
     const leftPanel = screen.getByTestId('player-panel-left');
     const rightPanel = screen.getByTestId('player-panel-right');

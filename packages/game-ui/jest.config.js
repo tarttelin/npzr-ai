@@ -29,5 +29,11 @@ module.exports = {
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '^@/(.*)$': '<rootDir>/src/$1',
+    // Map @npzr packages to source TypeScript files
+    '^@npzr/core$': '<rootDir>/../core/src',
+    '^@npzr/ai$': '<rootDir>/../ai/src',
+    '^@npzr/logging$': '<rootDir>/../logging/src',
+    // Transform .js imports to work with TypeScript source files
+    '^(\\./.*)\\.js$': '$1',
   },
 };

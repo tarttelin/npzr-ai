@@ -3,16 +3,15 @@
 /* Import Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Space+Mono:wght@400;700&family=Dancing+Script:wght@400;700&family=Pacifico&family=Orbitron:wght@400;700;900&display=swap');
 
-/* Import 7-segment display font from CDN */
-@import url('https://fonts.cdnfonts.com/css/ds-digital');
+/* Note: DS-Digital removed due to font validation errors - using Orbitron instead */
 
 /* Font Families for Each Character */
 :root {
   /* Ninja - Bold, Sharp, Attention-grabbing (Snap ITC alternative) */
   --font-ninja: 'Impact', 'Arial Black', 'Helvetica', sans-serif;
   
-  /* Robot - LCD/Digital style (7-segment display) */
-  --font-robot: 'DS-Digital', 'Orbitron', 'Space Mono', 'Courier New', monospace;
+  /* Robot - LCD/Digital style (using Orbitron for clean rendering) */
+  --font-robot: 'Orbitron', 'Space Mono', 'Courier New', monospace;
   
   /* Pirate - Elegant Script (Monotype Corsiva alternative) */
   --font-pirate: 'Brush Script MT', 'Lucida Handwriting', 'Dancing Script', 'Pacifico', cursive;

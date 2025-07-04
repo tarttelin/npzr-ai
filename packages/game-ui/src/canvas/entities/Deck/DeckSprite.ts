@@ -18,6 +18,7 @@ export const DECK_CONFIG = {
  */
 export class DeckSprite extends PIXI.Graphics {
   private cardCount: number = 44; // Default NPZR deck size
+  private isClickable: boolean = true;
 
   constructor() {
     super();
@@ -32,11 +33,15 @@ export class DeckSprite extends PIXI.Graphics {
   private createDeckVisual(): void {
     this.clear();
     
+    // Choose colors based on clickable state
+    const fillColor = this.isClickable ? DECK_CONFIG.COLOR : 0x757575; // Gray when not clickable
+    const borderColor = this.isClickable ? DECK_CONFIG.BORDER_COLOR : 0x424242;
+    
     // Draw the main rectangle with rounded corners (PixiJS v8 API)
     this
       .rect(0, 0, DECK_CONFIG.WIDTH, DECK_CONFIG.HEIGHT)
-      .fill(DECK_CONFIG.COLOR)
-      .stroke({ width: DECK_CONFIG.BORDER_WIDTH, color: DECK_CONFIG.BORDER_COLOR });
+      .fill(fillColor)
+      .stroke({ width: DECK_CONFIG.BORDER_WIDTH, color: borderColor });
   }
 
   /**
@@ -44,11 +49,18 @@ export class DeckSprite extends PIXI.Graphics {
    */
   private setupInteractivity(): void {
     this.eventMode = 'static';
-    this.cursor = 'pointer';
+    this.updateCursor();
     
     this.on('pointerover', this.onHover.bind(this));
     this.on('pointerout', this.onHoverEnd.bind(this));
     this.on('pointerdown', this.onClick.bind(this));
+  }
+
+  /**
+   * Update cursor based on clickable state
+   */
+  private updateCursor(): void {
+    this.cursor = this.isClickable ? 'pointer' : 'not-allowed';
   }
 
   /**
@@ -120,6 +132,24 @@ export class DeckSprite extends PIXI.Graphics {
         resolve();
       }, 150);
     });
+  }
+
+  /**
+   * Set whether the deck can be clicked
+   */
+  setClickable(clickable: boolean): void {
+    if (this.isClickable !== clickable) {
+      this.isClickable = clickable;
+      this.createDeckVisual(); // Redraw with new colors
+      this.updateCursor();
+    }
+  }
+
+  /**
+   * Check if deck is clickable
+   */
+  getClickable(): boolean {
+    return this.isClickable;
   }
 
   /**

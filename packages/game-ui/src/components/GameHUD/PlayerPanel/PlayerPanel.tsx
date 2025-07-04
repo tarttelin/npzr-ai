@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerPanelProps } from '../../../types/GameUI.types';
+import { CorePlayerPanelProps } from '../../../types/GameUI.types';
 import { formatCompletedCharacters } from '../../../utils/characterUtils';
 import './PlayerPanel.css';
 
@@ -11,12 +11,18 @@ import './PlayerPanel.css';
  * - Hand count indicator
  * - Active player highlighting
  * - Position-aware styling (left/right)
+ * - Core engine player data
  */
-export const PlayerPanel: React.FC<PlayerPanelProps> = ({
-  player,
-  isCurrentPlayer,
-  position,
+
+export const PlayerPanel: React.FC<CorePlayerPanelProps> = ({ 
+  player, 
+  isCurrentPlayer, 
+  position 
 }) => {
+  if (!player) {
+    return null;
+  }
+
   const panelClasses = [
     'player-panel',
     `player-panel--${position}`,
@@ -24,30 +30,53 @@ export const PlayerPanel: React.FC<PlayerPanelProps> = ({
   ].join(' ');
 
   return (
-    <div className={panelClasses} data-testid={`player-panel-${position}`}>
+    <div 
+      className={panelClasses}
+      data-testid={`player-panel-${position}`}
+      role="group"
+      aria-label={`${player.name} player information`}
+    >
+      {/* Player Name */}
       <div className="player-panel__header">
-        <h3 className="player-panel__name">{player.name}</h3>
+        <h3 className="player-panel__name" data-testid="player-name">
+          {player.name}
+        </h3>
         {isCurrentPlayer && (
-          <div className="player-panel__turn-indicator" aria-label="Current turn">
-            ●
-          </div>
+          <span className="player-panel__current-indicator" aria-hidden="true">
+            ▶
+          </span>
         )}
       </div>
-      
-      <div className="player-panel__stats">
-        <div className="player-panel__stat">
-          <span className="player-panel__stat-label">Completed</span>
-          <span className="player-panel__stat-value player-panel__characters" data-testid={`${position}-score`}>
-            {formatCompletedCharacters(player.score) || '—'}
+
+      {/* Score Display */}
+      <div className="player-panel__score">
+        <span className="player-panel__score-label">Completed:</span>
+        <div className="player-panel__score-value" data-testid="completed-characters">
+          {formatCompletedCharacters(player.score) || '—'}
+        </div>
+      </div>
+
+      {/* Hand Count */}
+      <div className="player-panel__hand">
+        <span className="player-panel__hand-label">Cards:</span>
+        <span className="player-panel__hand-count" data-testid="hand-count">
+          {player.handCount}
+        </span>
+      </div>
+
+      {/* Additional Core Engine Info */}
+      <div className="player-panel__status">
+        <div className="player-panel__status-row">
+          <span className="player-panel__status-label">Action:</span>
+          <span className="player-panel__status-value" data-testid="player-status">
+            {player.stateMessage || 'Waiting...'}
           </span>
         </div>
-        
-        <div className="player-panel__stat">
-          <span className="player-panel__stat-label">Cards</span>
-          <span className="player-panel__stat-value" data-testid={`${position}-hand-count`}>
-            {player.handCount}
-          </span>
-        </div>
+      </div>
+
+      {/* Accessibility */}
+      <div className="sr-only" aria-live="polite">
+        {isCurrentPlayer ? `${player.name} is the current player` : ''}
       </div>
     </div>
   );
