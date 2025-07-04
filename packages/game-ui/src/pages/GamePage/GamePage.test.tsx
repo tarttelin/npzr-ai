@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { GamePage } from './GamePage';
 import { EventBridge } from '../../bridge/EventBridge';
+import * as useGameEngine from '../../hooks/useGameEngine';
+import { PlayerState, PlayerStateType } from '@npzr/core';
 
 // Mock usePixiApp hook
 jest.mock('../../components/GameCanvas/hooks/usePixiApp', () => ({
@@ -67,6 +69,7 @@ describe('GamePage', () => {
   });
 
   it('Triggers drawing a card when the event bridge fires the draw card event', () => {
+    const useGameEngineSpy = jest.spyOn(useGameEngine, 'useGameEngine');
     render(<GamePage />);
     
     // Initial state should show "Draw a card" in left player panel (Human Player)
@@ -78,8 +81,10 @@ describe('GamePage', () => {
       eventBridge.emitToReact('game:deckClick', {cardCount: 44});
     });
     
-    expect(playerStatus).toHaveTextContent(/Play a card/);
-    
+    const stuff = useGameEngineSpy.mock.results[useGameEngineSpy.mock.results.length -1].value as useGameEngine.UseGameEngineReturn;
+    expect(stuff.currentPlayer?.getName()).toEqual("Human Player");
+    expect(stuff.currentPlayer?.getState()?.getState()).toEqual(PlayerStateType.PLAY_CARD);
+    expect(playerStatus).toHaveTextContent(stuff.currentPlayer?.getState().getMessage()!!);
   });
 
   it('handles Ctrl+N to start new game', () => {

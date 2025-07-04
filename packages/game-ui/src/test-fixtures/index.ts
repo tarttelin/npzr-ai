@@ -4,4 +4,3 @@
  */
 
 export * from './playerFixtures';
-export * from './mockFixtures';

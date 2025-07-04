@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { GameHUD } from './GameHUD';
 import { PlayerStateInfo, CharacterType } from '../../types/GameUI.types';
 import { PlayerStateType } from '@npzr/core';
-import { createPlayerStateInfo, createMockGameActions } from '../../test-fixtures';
+import { createPlayerStateInfo } from '../../test-fixtures';
 
 const mockPlayer1: PlayerStateInfo = createPlayerStateInfo({
   name: 'Player 1',
@@ -28,8 +28,6 @@ const mockPlayer2: PlayerStateInfo = createPlayerStateInfo({
   canNominate: false,
 });
 
-const mockGameActions = createMockGameActions();
-
 const mockProps = {
   player1: mockPlayer1,
   player2: mockPlayer2,
@@ -38,7 +36,6 @@ const mockProps = {
   winner: null,
   onNewGame: jest.fn(),
   onDrawCard: jest.fn(),
-  gameActions: mockGameActions,
 };
 
 describe('GameHUD', () => {
