@@ -50,10 +50,12 @@ export const Z_LAYERS = {
   BACKGROUND: 0,
   PLAYER_AREAS: 10,
   STACKS: 20,
-  CARDS: 30,
+  CARD: 30,
+  CARDS: 30, // Legacy alias
   DECK: 40,
   HAND: 50,
-  DRAGGING: 60,
+  DRAGGING_CARD: 60,
+  DRAGGING: 60, // Legacy alias
   UI_OVERLAY: 70,
   PARTICLES: 80,
 } as const;

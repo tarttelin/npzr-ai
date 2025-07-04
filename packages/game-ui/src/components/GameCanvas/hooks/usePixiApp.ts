@@ -51,7 +51,7 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
     } catch (error) {
       console.error('Failed to initialize PixiJS application:', error);
     }
-  }, [width, height, onResize]);
+  }, [width, height, onResize, setupSceneEvents]);
 
   /**
    * Setup scene event handlers

@@ -41,6 +41,9 @@ export interface CanvasEvents {
   'game:cardClick': { cardId: string };
   'game:cardDrag': { cardId: string; position: { x: number; y: number } };
   'game:stackClick': { stackId: string };
+  'game:cardPlay': { card: any; targetStackId?: string; targetPile?: any };
+  'game:cardMove': { cardId: string; fromStackId: string; fromPile: any; toStackId?: string; toPile: any };
+  'game:wildNomination': { card: any; character: any; bodyPart: any };
   
   // UI events from React to canvas
   'ui:newGame': void;
