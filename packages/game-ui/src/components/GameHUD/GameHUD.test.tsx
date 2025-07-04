@@ -2,44 +2,33 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { GameHUD } from './GameHUD';
 import { PlayerStateInfo, CharacterType } from '../../types/GameUI.types';
 import { PlayerStateType } from '@npzr/core';
+import { createPlayerStateInfo, createMockGameActions } from '../../test-fixtures';
 
-const mockPlayer1: PlayerStateInfo = {
-  id: 'player-1',
+const mockPlayer1: PlayerStateInfo = createPlayerStateInfo({
   name: 'Player 1',
   score: ['robot', 'pirate'] as CharacterType[],
   handCount: 5,
-  hand: [],
-  stacks: [],
   state: PlayerStateType.DRAW_CARD,
-  stateMessage: 'Draw a card from the deck to start your turn',
   isMyTurn: true,
   canDraw: true,
   canPlay: false,
   canMove: false,
   canNominate: false,
-};
+});
 
-const mockPlayer2: PlayerStateInfo = {
-  id: 'player-2',
+const mockPlayer2: PlayerStateInfo = createPlayerStateInfo({
   name: 'Player 2',
   score: ['ninja'] as CharacterType[],
   handCount: 7,
-  hand: [],
-  stacks: [],
   state: PlayerStateType.WAITING_FOR_OPPONENT,
-  stateMessage: 'Waiting for turn',
   isMyTurn: false,
   canDraw: false,
   canPlay: false,
   canMove: false,
   canNominate: false,
-};
+});
 
-const mockGameActions = {
-  playCard: jest.fn(),
-  moveCard: jest.fn(),
-  nominateWild: jest.fn(),
-};
+const mockGameActions = createMockGameActions();
 
 const mockProps = {
   player1: mockPlayer1,
@@ -111,13 +100,14 @@ describe('GameHUD', () => {
   });
 
   it('calls onDrawCard when draw card button is clicked', () => {
+    const humanPlayer = createPlayerStateInfo({
+      name: 'Human Player',
+      canDraw: true,
+    });
+    
     const propsWithHumanPlayer = {
       ...mockProps,
-      currentPlayer: {
-        ...mockPlayer1,
-        name: 'Human Player',
-        canDraw: true,
-      },
+      currentPlayer: humanPlayer,
     };
     
     render(<GameHUD {...propsWithHumanPlayer} onDrawCard={mockProps.onDrawCard} />);
@@ -141,12 +131,13 @@ describe('GameHUD', () => {
   });
 
   it('works without draw card functionality when not available', () => {
+    const playerWithoutDraw = createPlayerStateInfo({
+      canDraw: false,
+    });
+    
     const propsWithoutDraw = {
       ...mockProps,
-      currentPlayer: {
-        ...mockPlayer1,
-        canDraw: false,
-      },
+      currentPlayer: playerWithoutDraw,
     };
     
     render(<GameHUD {...propsWithoutDraw} />);
@@ -165,17 +156,20 @@ describe('GameHUD', () => {
   });
 
   it('switches active player when turn changes', () => {
+    const player1Inactive = createPlayerStateInfo({
+      name: 'Player 1',
+      isMyTurn: false,
+    });
+    const player2Active = createPlayerStateInfo({
+      name: 'Player 2',
+      isMyTurn: true,
+    });
+
     const player2TurnProps = {
       ...mockProps,
-      currentPlayer: mockPlayer2,
-      player1: {
-        ...mockPlayer1,
-        isMyTurn: false,
-      },
-      player2: {
-        ...mockPlayer2,
-        isMyTurn: true,
-      },
+      currentPlayer: player2Active,
+      player1: player1Inactive,
+      player2: player2Active,
     };
 
     render(<GameHUD {...player2TurnProps} />);

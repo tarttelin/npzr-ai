@@ -1,7 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { GamePage } from './GamePage';
-import { GameState, PlayerStateInfo, CharacterType } from '../../types/GameUI.types';
-import { PlayerStateType } from '@npzr/core';
 
 // Mock child components - updated for core engine props
 jest.mock('../../components/GameHUD/GameHUD', () => ({
@@ -34,59 +32,14 @@ jest.mock('../../components/GameCanvas/GameCanvas', () => ({
   }),
 }));
 
-// Mock useGameState hook
-let mockGameState: GameState = {
-  player1: {
-    id: 'player1',
-    name: 'Player 1',
-    score: [] as CharacterType[],
-    handCount: 5,
-    hand: [],
-    stacks: [],
-    state: PlayerStateType.DRAW_CARD,
-    stateMessage: 'Draw a card from the deck to start your turn',
-    isMyTurn: true,
-    canDraw: true,
-    canPlay: false,
-    canMove: false,
-    canNominate: false,
-  } as PlayerStateInfo,
-  player2: {
-    id: 'player2',
-    name: 'Player 2',
-    score: [] as CharacterType[],
-    handCount: 5,
-    hand: [],
-    stacks: [],
-    state: PlayerStateType.WAITING_FOR_OPPONENT,
-    stateMessage: 'Waiting for opponent',
-    isMyTurn: false,
-    canDraw: false,
-    canPlay: false,
-    canMove: false,
-    canNominate: false,
-  } as PlayerStateInfo,
-  currentPlayer: null,
-  gamePhase: 'setup',
-  winner: null,
-  isGameComplete: false,
-  error: null,
-};
 
 // Note: useGameState hook was removed in core engine integration
 // GamePage now uses useGameEngine and usePlayerState hooks directly
 
+import { createMockUseGameEngine, createMockUsePlayerState, createHumanPlayer, createAIPlayer } from '../../test-fixtures';
+
 // Mock useGameEngine hook to avoid real game engine initialization
-const mockUseGameEngine = {
-  gameEngine: null,
-  players: [null, null] as [null, null],
-  currentPlayer: null,
-  isGameComplete: false,
-  winner: null,
-  createNewGame: jest.fn(),
-  isInitialized: true,
-  error: null,
-};
+const mockUseGameEngine = createMockUseGameEngine();
 
 jest.mock('../../hooks/useGameEngine', () => ({
   useGameEngine: () => mockUseGameEngine,
@@ -94,46 +47,9 @@ jest.mock('../../hooks/useGameEngine', () => ({
 
 // Mock usePlayerState hook with dynamic return values
 let mockUsePlayerStateReturn = {
-  humanPlayerState: {
-    id: 'human-player',
-    name: 'Human Player',
-    score: [] as CharacterType[],
-    handCount: 5,
-    hand: [],
-    stacks: [],
-    state: PlayerStateType.DRAW_CARD,
-    stateMessage: 'Draw a card from the deck to start your turn',
-    isMyTurn: true,
-    canDraw: true,
-    canPlay: false,
-    canMove: false,
-    canNominate: false,
-  } as PlayerStateInfo,
-  aiPlayerState: {
-    id: 'ai-player',
-    name: 'AI Opponent',
-    score: [] as CharacterType[],
-    handCount: 5,
-    hand: [],
-    stacks: [],
-    state: PlayerStateType.WAITING_FOR_OPPONENT,
-    stateMessage: '',
-    isMyTurn: false,
-    canDraw: false,
-    canPlay: false,
-    canMove: false,
-    canNominate: false,
-  } as PlayerStateInfo,
-  currentPlayerState: null,
-  gamePhase: 'setup',
-  hasError: false,
-  errorMessage: null,
-  gameActions: {
-    drawCard: jest.fn(),
-    playCard: jest.fn(),
-    moveCard: jest.fn(),
-    nominateWild: jest.fn()
-  }
+  ...createMockUsePlayerState(),
+  humanPlayerState: createHumanPlayer(),
+  aiPlayerState: createAIPlayer(),
 };
 
 jest.mock('../../hooks/usePlayerState', () => ({
@@ -143,45 +59,6 @@ jest.mock('../../hooks/usePlayerState', () => ({
 describe('GamePage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Reset mock state to setup
-    mockGameState = {
-      player1: {
-        id: 'player1',
-        name: 'Player 1',
-        score: [] as CharacterType[],
-        handCount: 5,
-        hand: [],
-        stacks: [],
-        state: PlayerStateType.DRAW_CARD,
-        stateMessage: 'Draw a card from the deck to start your turn',
-        isMyTurn: true,
-        canDraw: true,
-        canPlay: false,
-        canMove: false,
-        canNominate: false,
-      } as PlayerStateInfo,
-      player2: {
-        id: 'player2',
-        name: 'Player 2',
-        score: [] as CharacterType[],
-        handCount: 5,
-        hand: [],
-        stacks: [],
-        state: PlayerStateType.WAITING_FOR_OPPONENT,
-        stateMessage: 'Waiting for opponent',
-        isMyTurn: false,
-        canDraw: false,
-        canPlay: false,
-        canMove: false,
-        canNominate: false,
-      } as PlayerStateInfo,
-      currentPlayer: null,
-      gamePhase: 'setup',
-      winner: null,
-      isGameComplete: false,
-      error: null,
-    };
-    // mockGameState updated in beforeEach
     
     // Reset useGameEngine mock
     mockUseGameEngine.createNewGame.mockClear();
