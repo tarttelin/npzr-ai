@@ -52,7 +52,7 @@ export const PlayerPanel: React.FC<CorePlayerPanelProps> = ({
       <div className="player-panel__score">
         <span className="player-panel__score-label">Completed:</span>
         <div className="player-panel__score-value" data-testid="completed-characters">
-          {formatCompletedCharacters(player.score)}
+          {formatCompletedCharacters(player.score) || '—'}
         </div>
       </div>
 

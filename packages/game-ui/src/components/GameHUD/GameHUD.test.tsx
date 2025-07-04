@@ -72,15 +72,16 @@ describe('GameHUD', () => {
   it('displays player names correctly', () => {
     render(<GameHUD {...mockProps} />);
     
-    expect(screen.getByText('Player 1')).toBeInTheDocument();
+    expect(screen.getAllByText('Player 1')).toHaveLength(2); // In PlayerPanel and TurnIndicator
     expect(screen.getByText('Player 2')).toBeInTheDocument();
   });
 
   it('displays player scores correctly', () => {
     render(<GameHUD {...mockProps} />);
     
-    expect(screen.getByTestId('completed-characters')).toHaveTextContent('RP');
-    expect(screen.getByTestId('completed-characters')).toHaveTextContent('N');
+    const scoreElements = screen.getAllByTestId('completed-characters');
+    expect(scoreElements[0]).toHaveTextContent('RP'); // Player 1 (left)
+    expect(scoreElements[1]).toHaveTextContent('N');  // Player 2 (right)
   });
 
   it('displays player hand counts correctly', () => {
@@ -110,15 +111,24 @@ describe('GameHUD', () => {
   });
 
   it('calls onDrawCard when draw card button is clicked', () => {
-    render(<GameHUD {...mockProps} />);
+    const propsWithHumanPlayer = {
+      ...mockProps,
+      currentPlayer: {
+        ...mockPlayer1,
+        name: 'Human Player',
+        canDraw: true,
+      },
+    };
     
-    const drawButton = screen.getByTestId('draw-card-button');
+    render(<GameHUD {...propsWithHumanPlayer} onDrawCard={mockProps.onDrawCard} />);
+    
+    const drawButton = screen.getByTestId('draw-card-btn');
     fireEvent.click(drawButton);
     
     expect(mockProps.onDrawCard).toHaveBeenCalledTimes(1);
   });
 
-  it('disables controls when game is finished', () => {
+  it('keeps controls enabled when game is finished', () => {
     const finishedProps = {
       ...mockProps,
       gamePhase: 'finished' as const,

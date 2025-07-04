@@ -73,18 +73,8 @@ let mockGameState: GameState = {
   error: null,
 };
 
-const mockUseGameState = {
-  gameState: mockGameState as GameState,
-  startNewGame: jest.fn(),
-  pauseGame: jest.fn(),
-  switchTurn: jest.fn(),
-  addCompletedCharacter: jest.fn(),
-  endGame: jest.fn(),
-};
-
-jest.mock('../../hooks/useGameState', () => ({
-  useGameState: () => mockUseGameState,
-}));
+// Note: useGameState hook was removed in core engine integration
+// GamePage now uses useGameEngine and usePlayerState hooks directly
 
 // Mock useGameEngine hook to avoid real game engine initialization
 const mockUseGameEngine = {
@@ -191,7 +181,7 @@ describe('GamePage', () => {
       isGameComplete: false,
       error: null,
     };
-    mockUseGameState.gameState = mockGameState;
+    // mockGameState updated in beforeEach
     
     // Reset useGameEngine mock
     mockUseGameEngine.createNewGame.mockClear();

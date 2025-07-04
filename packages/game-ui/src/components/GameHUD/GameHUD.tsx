@@ -67,7 +67,7 @@ export const GameHUD: React.FC<CoreGameHUDProps> = ({
       <div className="game-hud__section game-hud__section--controls">
         <GameControls
           onNewGame={onNewGame}
-          disabled={gamePhase === 'finished'}
+          disabled={false}
         />
       </div>
     </div>
