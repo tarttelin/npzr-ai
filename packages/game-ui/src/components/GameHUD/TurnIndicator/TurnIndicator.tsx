@@ -1,5 +1,5 @@
 import React from 'react';
-import { TurnIndicatorProps, CoreTurnIndicatorProps } from '../../../types/GameUI.types';
+import { CoreTurnIndicatorProps } from '../../../types/GameUI.types';
 import './TurnIndicator.css';
 
 /**
@@ -26,45 +26,7 @@ const getPhaseText = (phase: 'setup' | 'playing' | 'finished'): string => {
   }
 };
 
-// Legacy TurnIndicator
-export const LegacyTurnIndicator: React.FC<TurnIndicatorProps> = ({
-  currentPlayer,
-  gamePhase,
-}) => {
-  const isGameActive = gamePhase === 'playing';
-
-  return (
-    <div 
-      className={`turn-indicator ${isGameActive ? 'turn-indicator--active' : ''}`}
-      data-testid="turn-indicator"
-      role="status"
-      aria-live="polite"
-      aria-label={`Current turn: ${currentPlayer.name}, Game phase: ${getPhaseText(gamePhase)}`}
-    >
-      <div className="turn-indicator__phase">
-        {getPhaseText(gamePhase)}
-      </div>
-      
-      {isGameActive && (
-        <div className="turn-indicator__current-player">
-          <span className="turn-indicator__label">Turn:</span>
-          <span className="turn-indicator__player-name">
-            {currentPlayer.name}
-          </span>
-        </div>
-      )}
-      
-      {gamePhase === 'finished' && (
-        <div className="turn-indicator__game-over" data-testid="game-over">
-          🎮
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Core TurnIndicator with enhanced functionality
-export const CoreTurnIndicator: React.FC<CoreTurnIndicatorProps> = ({
+export const TurnIndicator: React.FC<CoreTurnIndicatorProps> = ({
   currentPlayer,
   gamePhase,
   winner,
@@ -156,16 +118,4 @@ export const CoreTurnIndicator: React.FC<CoreTurnIndicatorProps> = ({
       )}
     </div>
   );
-};
-
-// Main TurnIndicator export - automatically detects which props to use
-export const TurnIndicator: React.FC<TurnIndicatorProps | CoreTurnIndicatorProps> = (props) => {
-  // Type guard to detect legacy vs core props
-  if ('currentPlayer' in props && props.currentPlayer && 'isActive' in props.currentPlayer) {
-    // Legacy props
-    return <LegacyTurnIndicator {...props as TurnIndicatorProps} />;
-  } else {
-    // Core props
-    return <CoreTurnIndicator {...props as CoreTurnIndicatorProps} />;
-  }
 };

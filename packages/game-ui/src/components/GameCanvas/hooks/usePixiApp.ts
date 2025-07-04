@@ -48,8 +48,8 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
    */
   const initializeApp = useCallback(async () => {
     // Prevent multiple simultaneous initializations (React StrictMode protection)
-    if (!containerRef.current || canvasAppRef.current || initializingRef.current) {
-      // Skip initialization if already in progress or completed
+    if (!containerRef.current || initializingRef.current) {
+      // Skip initialization if already in progress
       return;
     }
 
@@ -57,7 +57,11 @@ export function usePixiApp({ width, height, onResize }: UsePixiAppOptions) {
 
     // Ensure any existing app is properly cleaned up first
     if (canvasAppRef.current) {
-      canvasAppRef.current.destroy();
+      try {
+        canvasAppRef.current.destroy();
+      } catch (error) {
+        console.warn('Error destroying canvas app:', error);
+      }
       canvasAppRef.current = null;
     }
 

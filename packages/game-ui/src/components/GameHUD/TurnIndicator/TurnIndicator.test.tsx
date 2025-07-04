@@ -1,12 +1,22 @@
 import { render, screen } from '@testing-library/react';
 import { TurnIndicator } from './TurnIndicator';
-import { PlayerInfo } from '../../../types/GameUI.types';
+import { PlayerStateInfo, CharacterType } from '../../../types/GameUI.types';
+import { PlayerStateType } from '@npzr/core';
 
-const mockPlayer: PlayerInfo = {
+const mockPlayer: PlayerStateInfo = {
+  id: 'player-1',
   name: 'Test Player',
-  score: ['robot', 'pirate'],
+  score: ['robot', 'pirate'] as CharacterType[],
   handCount: 5,
-  isActive: true,
+  hand: [],
+  stacks: [],
+  state: PlayerStateType.DRAW_CARD,
+  stateMessage: 'Draw a card from the deck to start your turn',
+  isMyTurn: true,
+  canDraw: true,
+  canPlay: false,
+  canMove: false,
+  canNominate: false,
 };
 
 describe('TurnIndicator', () => {
@@ -150,7 +160,7 @@ describe('TurnIndicator', () => {
   });
 
   it('handles different player names correctly', () => {
-    const differentPlayer = { ...mockPlayer, name: 'AI Player' };
+    const differentPlayer: PlayerStateInfo = { ...mockPlayer, name: 'AI Player' };
     
     render(
       <TurnIndicator 

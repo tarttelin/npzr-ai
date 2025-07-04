@@ -1,32 +1,14 @@
 /**
  * Type definitions for the NPZR Game UI components
- * Includes both legacy mock types and new core engine integration types
+ * Core engine integration types only
  */
 
 import { Card, Stack, Character, BodyPart, PlayerStateType } from '@npzr/core';
 
 export type CharacterType = 'ninja' | 'pirate' | 'zombie' | 'robot';
 
-// Legacy mock types (for backward compatibility during migration)
-export interface PlayerInfo {
-  name: string;
-  score: CharacterType[]; // Array of completed characters
-  handCount: number;
-  isActive: boolean;
-}
-
-export interface GameState {
-  players: {
-    player1: PlayerInfo;
-    player2: PlayerInfo;
-  };
-  currentTurn: 'player1' | 'player2';
-  gamePhase: 'setup' | 'playing' | 'finished';
-  winner?: 'player1' | 'player2' | 'draw';
-}
-
-// New core engine integration types
-export interface CorePlayerInfo {
+// Core engine integration types
+export interface PlayerStateInfo {
   id: string;
   name: string;
   score: CharacterType[];
@@ -42,12 +24,12 @@ export interface CorePlayerInfo {
   canNominate: boolean;
 }
 
-export interface CoreGameState {
-  player1: CorePlayerInfo | null;
-  player2: CorePlayerInfo | null;
-  currentPlayer: CorePlayerInfo | null;
+export interface GameState {
+  player1: PlayerStateInfo | null;
+  player2: PlayerStateInfo | null;
+  currentPlayer: PlayerStateInfo | null;
   gamePhase: 'setup' | 'playing' | 'finished';
-  winner: CorePlayerInfo | null;
+  winner: PlayerStateInfo | null;
   isGameComplete: boolean;
   error: string | null;
 }
@@ -104,20 +86,13 @@ export interface GamePageProps {
   // No props initially - will be extended in later phases
 }
 
-// Legacy GameHUD props (for backward compatibility)
-export interface GameHUDProps {
-  gameState: GameState;
-  onNewGame: () => void;
-  onPause?: () => void;
-}
-
-// New core engine GameHUD props
+// Core engine GameHUD props
 export interface CoreGameHUDProps {
-  player1: CorePlayerInfo | null;
-  player2: CorePlayerInfo | null;
-  currentPlayer: CorePlayerInfo | null;
+  player1: PlayerStateInfo | null;
+  player2: PlayerStateInfo | null;
+  currentPlayer: PlayerStateInfo | null;
   gamePhase: 'setup' | 'playing' | 'finished';
-  winner: CorePlayerInfo | null;
+  winner: PlayerStateInfo | null;
   onNewGame: () => void;
   onDrawCard: () => void;
   gameActions: {
@@ -127,14 +102,7 @@ export interface CoreGameHUDProps {
   };
 }
 
-// Legacy GameCanvas props (for backward compatibility)
-export interface GameCanvasProps {
-  width?: number;
-  height?: number;
-  gameState: GameState;
-}
-
-// New core engine GameCanvas props
+// Core engine GameCanvas props
 export interface CoreGameCanvasProps {
   width?: number;
   height?: number;
@@ -150,37 +118,23 @@ export interface CoreGameCanvasProps {
   };
 }
 
-// Legacy PlayerPanel props (for backward compatibility)
-export interface PlayerPanelProps {
-  player: PlayerInfo;
-  isCurrentPlayer: boolean;
-  position: 'left' | 'right';
-}
-
-// New core engine PlayerPanel props
+// Core engine PlayerPanel props
 export interface CorePlayerPanelProps {
-  player: CorePlayerInfo | null;
+  player: PlayerStateInfo | null;
   isCurrentPlayer: boolean;
   position: 'left' | 'right';
 }
 
 export interface GameControlsProps {
   onNewGame: () => void;
-  onPause?: () => void;
   disabled?: boolean;
 }
 
-// Legacy TurnIndicator props
-export interface TurnIndicatorProps {
-  currentPlayer: PlayerInfo;
-  gamePhase: GameState['gamePhase'];
-}
-
-// New core engine TurnIndicator props
+// Core engine TurnIndicator props
 export interface CoreTurnIndicatorProps {
-  currentPlayer: CorePlayerInfo | null;
+  currentPlayer: PlayerStateInfo | null;
   gamePhase: 'setup' | 'playing' | 'finished';
-  winner?: CorePlayerInfo | null;
+  winner?: PlayerStateInfo | null;
   onDrawCard?: () => void;
   canDraw?: boolean;
   canPlay?: boolean;
@@ -195,6 +149,6 @@ export interface CanvasSize {
 }
 
 export interface GameAction {
-  type: 'NEW_GAME' | 'SWITCH_TURN' | 'ADD_COMPLETED_CHARACTER' | 'END_GAME' | 'PAUSE_GAME';
+  type: 'NEW_GAME' | 'SWITCH_TURN' | 'ADD_COMPLETED_CHARACTER' | 'END_GAME';
   payload?: any;
 }

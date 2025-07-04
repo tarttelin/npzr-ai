@@ -1,6 +1,5 @@
 import { render, screen, act } from '@testing-library/react';
 import { GameCanvas } from './GameCanvas';
-import { GameState } from '../../types/GameUI.types';
 
 // Mock PixiJS
 jest.mock('pixi.js', () => ({
@@ -35,23 +34,25 @@ jest.mock('./hooks/usePixiApp', () => ({
   })),
 }));
 
-const mockGameState: GameState = {
-  players: {
-    player1: {
-      name: 'Player 1',
-      score: [],
-      handCount: 5,
-      isActive: true,
-    },
-    player2: {
-      name: 'Player 2',
-      score: [],
-      handCount: 5,
-      isActive: false,
-    },
-  },
-  currentTurn: 'player1',
+const mockGameEngine = {
+  players: [null, null],
+  currentPlayerId: 'player1',
   gamePhase: 'setup',
+};
+
+const mockGameActions = {
+  drawCard: jest.fn(),
+  playCard: jest.fn(),
+  moveCard: jest.fn(),
+  nominateWild: jest.fn(),
+};
+
+const mockProps = {
+  gameEngine: mockGameEngine,
+  players: [null, null] as [null, null],
+  currentPlayer: null,
+  gamePhase: 'setup' as const,
+  gameActions: mockGameActions,
 };
 
 describe('GameCanvas', () => {
@@ -60,12 +61,12 @@ describe('GameCanvas', () => {
   });
 
   it('renders without crashing', () => {
-    render(<GameCanvas gameState={mockGameState} />);
+    render(<GameCanvas {...mockProps} />);
     expect(screen.getByTestId('game-canvas')).toBeInTheDocument();
   });
 
   it('renders canvas container', () => {
-    render(<GameCanvas gameState={mockGameState} />);
+    render(<GameCanvas {...mockProps} />);
     const container = screen.getByTestId('game-canvas');
     expect(container.querySelector('.canvas-container')).toBeInTheDocument();
   });
@@ -74,11 +75,10 @@ describe('GameCanvas', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
 
-    render(<GameCanvas gameState={mockGameState} />);
+    render(<GameCanvas {...mockProps} />);
     
     expect(screen.getByText(/Canvas:/)).toBeInTheDocument();
     expect(screen.getByText(/Phase: setup/)).toBeInTheDocument();
-    expect(screen.getByText(/Turn: player1/)).toBeInTheDocument();
 
     process.env.NODE_ENV = originalEnv;
   });
@@ -87,7 +87,7 @@ describe('GameCanvas', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
-    render(<GameCanvas gameState={mockGameState} />);
+    render(<GameCanvas {...mockProps} />);
     
     expect(screen.queryByText(/Canvas:/)).not.toBeInTheDocument();
 
@@ -97,7 +97,7 @@ describe('GameCanvas', () => {
   it('accepts custom width and height props', () => {
     render(
       <GameCanvas 
-        gameState={mockGameState} 
+        {...mockProps}
         width={1000} 
         height={800} 
       />
@@ -107,7 +107,7 @@ describe('GameCanvas', () => {
   });
 
   it('handles window resize events', () => {
-    const { unmount } = render(<GameCanvas gameState={mockGameState} />);
+    const { unmount } = render(<GameCanvas {...mockProps} />);
     
     // Simulate window resize
     act(() => {

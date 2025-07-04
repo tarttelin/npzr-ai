@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GameCanvasProps, CoreGameCanvasProps } from '../../types/GameUI.types';
+import { CoreGameCanvasProps } from '../../types/GameUI.types';
 import { usePixiApp } from './hooks/usePixiApp';
 import './GameCanvas.css';
 
@@ -12,65 +12,9 @@ import './GameCanvas.css';
  * - Interactive gameplay elements
  * - Responsive canvas sizing
  * - Proper PixiJS lifecycle management
- * - Supports both legacy and core engine props
+ * - Core engine integration
  */
-
-// Legacy GameCanvas component
-export const LegacyGameCanvas: React.FC<GameCanvasProps> = ({ 
-  width = 800, 
-  height = 600, 
-  gameState 
-}) => {
-  const [canvasSize, setCanvasSize] = useState({ width, height });
-
-  const { containerRef } = usePixiApp({
-    width: canvasSize.width,
-    height: canvasSize.height,
-    onResize: (newWidth, newHeight) => {
-      setCanvasSize({ width: newWidth, height: newHeight });
-    },
-  });
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setCanvasSize({ 
-          width: rect.width || width, 
-          height: rect.height || height 
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [width, height, containerRef]);
-
-  return (
-    <div className="game-canvas" data-testid="game-canvas">
-      <div 
-        ref={containerRef} 
-        className="canvas-container"
-        style={{ width: '100%', height: '100%' }}
-      />
-      
-      {/* Debug info - will be removed in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="canvas-debug-info">
-          <small>
-            Canvas: {canvasSize.width}×{canvasSize.height} | 
-            Phase: {gameState.gamePhase} | 
-            Turn: {gameState.currentTurn}
-          </small>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Core GameCanvas component with real game engine integration
-export const CoreGameCanvas: React.FC<CoreGameCanvasProps> = ({
+export const GameCanvas: React.FC<CoreGameCanvasProps> = ({
   width = 800,
   height = 600,
   gameEngine,
@@ -244,16 +188,4 @@ export const CoreGameCanvas: React.FC<CoreGameCanvasProps> = ({
       )}
     </div>
   );
-};
-
-// Main GameCanvas export - automatically detects which props to use
-export const GameCanvas: React.FC<GameCanvasProps | CoreGameCanvasProps> = (props) => {
-  // Type guard to detect legacy vs core props
-  if ('gameState' in props) {
-    // Legacy props
-    return <LegacyGameCanvas {...props as GameCanvasProps} />;
-  } else {
-    // Core props
-    return <CoreGameCanvas {...props as CoreGameCanvasProps} />;
-  }
 };

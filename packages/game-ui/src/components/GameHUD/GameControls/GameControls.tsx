@@ -7,24 +7,16 @@ import './GameControls.css';
  * 
  * Features:
  * - New Game button
- * - Pause button (optional)
  * - Disabled state support
  * - Keyboard accessibility
  */
 export const GameControls: React.FC<GameControlsProps> = ({
   onNewGame,
-  onPause,
   disabled = false,
 }) => {
   const handleNewGame = () => {
     if (!disabled) {
       onNewGame();
-    }
-  };
-
-  const handlePause = () => {
-    if (!disabled && onPause) {
-      onPause();
     }
   };
 
@@ -39,18 +31,6 @@ export const GameControls: React.FC<GameControlsProps> = ({
       >
         New Game
       </button>
-      
-      {onPause && (
-        <button
-          className="game-controls__button game-controls__button--secondary"
-          onClick={handlePause}
-          disabled={disabled}
-          data-testid="pause-button"
-          aria-label="Pause the current game"
-        >
-          Pause
-        </button>
-      )}
     </div>
   );
 };

@@ -32,7 +32,7 @@ export class CanvasApplication {
         antialias: true,
         resolution: window.devicePixelRatio || 1,
         autoDensity: true,
-        preference: 'webgl2', // Prefer WebGL2 for better compatibility
+        preference: 'webgl', // Prefer WebGL for better compatibility
       });
       
       // PixiJS Application initialized successfully
@@ -143,7 +143,7 @@ export class CanvasApplication {
     try {
       // Check if context is actually lost
       const gl = this.app.canvas.getContext('webgl') || this.app.canvas.getContext('experimental-webgl');
-      if (gl && gl.isContextLost && gl.isContextLost()) {
+      if (gl && (gl as WebGLRenderingContext).isContextLost?.()) {
         console.warn('WebGL context is lost, waiting for restoration...');
         return;
       }
@@ -170,12 +170,7 @@ export class CanvasApplication {
     if (this.app) {
       try {
         // Properly destroy with cleanup options
-        this.app.destroy({
-          children: true,
-          texture: true,
-          textureSource: true,
-          context: true
-        });
+        this.app.destroy(true, { children: true, texture: true });
         // PixiJS Application destroyed successfully
       } catch (error) {
         console.warn('⚠️ Error during PixiJS Application destruction:', error);

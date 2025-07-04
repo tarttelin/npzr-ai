@@ -1,12 +1,22 @@
 import { render, screen } from '@testing-library/react';
 import { PlayerPanel } from './PlayerPanel';
-import { PlayerInfo, CharacterType } from '../../../types/GameUI.types';
+import { PlayerStateInfo, CharacterType } from '../../../types/GameUI.types';
+import { PlayerStateType } from '@npzr/core';
 
-const mockPlayer: PlayerInfo = {
+const mockPlayer: PlayerStateInfo = {
+  id: 'player-1',
   name: 'Test Player',
   score: ['robot', 'pirate', 'ninja'], // RPN
   handCount: 6,
-  isActive: true,
+  hand: [],
+  stacks: [],
+  state: PlayerStateType.DRAW_CARD,
+  stateMessage: 'Draw a card from the deck to start your turn',
+  isMyTurn: true,
+  canDraw: true,
+  canPlay: false,
+  canMove: false,
+  canNominate: false,
 };
 
 describe('PlayerPanel', () => {
@@ -40,7 +50,7 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-score')).toHaveTextContent('RPN');
+    expect(screen.getByTestId('completed-characters')).toHaveTextContent('RPN');
   });
 
   it('displays player hand count correctly', () => {
@@ -51,10 +61,10 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-hand-count')).toHaveTextContent('6');
+    expect(screen.getByTestId('hand-count')).toHaveTextContent('6');
   });
 
-  it('shows turn indicator when player is current', () => {
+  it('displays player state message', () => {
     render(
       <PlayerPanel 
         player={mockPlayer} 
@@ -62,10 +72,21 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByLabelText('Current turn')).toBeInTheDocument();
+    expect(screen.getByTestId('player-status')).toHaveTextContent('Draw a card from the deck to start your turn');
   });
 
-  it('hides turn indicator when player is not current', () => {
+  it('shows current player indicator when player is current', () => {
+    render(
+      <PlayerPanel 
+        player={mockPlayer} 
+        isCurrentPlayer={true} 
+        position="left" 
+      />
+    );
+    expect(screen.getByText('▶')).toBeInTheDocument();
+  });
+
+  it('hides current player indicator when player is not current', () => {
     render(
       <PlayerPanel 
         player={mockPlayer} 
@@ -73,7 +94,7 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.queryByLabelText('Current turn')).not.toBeInTheDocument();
+    expect(screen.queryByText('▶')).not.toBeInTheDocument();
   });
 
   it('applies active class when player is current', () => {
@@ -124,20 +145,8 @@ describe('PlayerPanel', () => {
     expect(panel).toHaveClass('player-panel--right');
   });
 
-  it('renders score and hand count with correct test ids for right position', () => {
-    render(
-      <PlayerPanel 
-        player={mockPlayer} 
-        isCurrentPlayer={true} 
-        position="right" 
-      />
-    );
-    expect(screen.getByTestId('right-score')).toHaveTextContent('RPN');
-    expect(screen.getByTestId('right-hand-count')).toHaveTextContent('6');
-  });
-
   it('handles empty score correctly', () => {
-    const noScorePlayer = { ...mockPlayer, score: [] };
+    const noScorePlayer = { ...mockPlayer, score: [] as CharacterType[] };
     render(
       <PlayerPanel 
         player={noScorePlayer} 
@@ -145,11 +154,11 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-score')).toHaveTextContent('—');
+    expect(screen.getByTestId('completed-characters')).toHaveTextContent('—');
   });
 
   it('handles multiple same characters correctly', () => {
-    const multipleScorePlayer: PlayerInfo = { 
+    const multipleScorePlayer: PlayerStateInfo = { 
       ...mockPlayer, 
       score: ['robot', 'pirate', 'ninja', 'pirate'] as CharacterType[]
     }; // RPNP
@@ -160,6 +169,17 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByTestId('left-score')).toHaveTextContent('RPNP');
+    expect(screen.getByTestId('completed-characters')).toHaveTextContent('RPNP');
+  });
+
+  it('returns null when player is null', () => {
+    const { container } = render(
+      <PlayerPanel 
+        player={null} 
+        isCurrentPlayer={false} 
+        position="left" 
+      />
+    );
+    expect(container.firstChild).toBeNull();
   });
 });
