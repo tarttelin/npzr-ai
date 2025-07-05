@@ -156,18 +156,103 @@ The engine follows a **layered monorepo architecture** with domain-driven design
 
 ## Testing Architecture
 
-### Test Organization (117 tests, ~90%+ coverage)
+### Test Organization (130+ tests, ~90%+ coverage)
 - **@npzr/core**: 13 integration tests covering end-to-end game scenarios
 - **@npzr/ai**: 102 comprehensive tests for AI intelligence, strategy, and difficulty levels
 - **@npzr/logging**: 2 tests for winston-free logger functionality
 - **@npzr/ui-react**: React component testing (expandable)
-- **@npzr/game-ui**: No tests yet (skeleton application)
+- **@npzr/game-ui**: 13 tests with real component integration and test fixtures
 
 ### Test Distribution
 - **5 packages**: All with independent test suites
-- **117 total tests**: Comprehensive coverage of core functionality
+- **130+ total tests**: Comprehensive coverage of core functionality
 - **AI behavior verification**: Console output validates strategic decisions
+- **UI integration testing**: Real component testing with minimal mocking
 - **Cross-package integration**: Tests verify workspace dependency resolution
+
+### Test Fixtures and Integration Testing (@npzr/game-ui)
+
+The game-ui package uses **minimal mocking** and **real component integration** for better test reliability. Test fixtures provide clean, realistic test data while avoiding heavy mocking.
+
+#### Test Fixtures Architecture
+```
+src/test-fixtures/
+├── index.ts           # Exports test fixture functions
+└── playerFixtures.ts  # createPlayerStateInfo() builder
+```
+
+#### Key Testing Patterns
+
+**1. Using Test Fixtures for Real Data**
+```typescript
+import { createPlayerStateInfo } from '../../test-fixtures';
+
+// Create realistic PlayerStateInfo with overrides for specific test needs
+const mockPlayer = createPlayerStateInfo({
+  name: 'Test Player',
+  score: ['robot', 'pirate'] as CharacterType[],
+  state: PlayerStateType.DRAW_CARD,
+  isMyTurn: true,
+  canDraw: true
+});
+```
+
+**2. Testing Real Game State Changes with EventBridge**
+```typescript
+import * as useGameEngine from '../../hooks/useGameEngine';
+import { EventBridge } from '../../bridge/EventBridge';
+
+it('triggers game state changes via EventBridge', () => {
+  const useGameEngineSpy = jest.spyOn(useGameEngine, 'useGameEngine');
+  render(<GamePage />);
+  
+  // Trigger real game action via EventBridge
+  const eventBridge = EventBridge.getInstance();
+  act(() => {
+    eventBridge.emitToReact('game:deckClick', {cardCount: 44});
+  });
+  
+  // Access real game engine return values
+  const gameEngineReturn = useGameEngineSpy.mock.results[useGameEngineSpy.mock.results.length - 1].value;
+  expect(gameEngineReturn.currentPlayer?.getName()).toEqual("Human Player");
+  expect(gameEngineReturn.currentPlayer?.getState()?.getState()).toEqual(PlayerStateType.PLAY_CARD);
+  
+  // Verify UI reflects real game state
+  const playerStatus = screen.getByTestId('player-status');
+  expect(playerStatus).toHaveTextContent(gameEngineReturn.currentPlayer?.getState().getMessage());
+});
+```
+
+**3. Testing State Transitions to Verify Functionality**
+```typescript
+it('proves new game functionality works', () => {
+  // Start with known state
+  expect(playerStatus).toHaveTextContent(/Draw a card from the deck/);
+  
+  // Trigger state change to prove game is working
+  fireEvent.click(drawButton);
+  expect(playerStatus).not.toHaveTextContent(/Draw a card from the deck/);
+  
+  // Trigger reset and verify it actually resets
+  fireEvent.click(newGameButton);
+  expect(playerStatus).toHaveTextContent(/Draw a card from the deck/);
+});
+```
+
+**4. Targeting Specific UI Elements in Multi-Player Interface**
+```typescript
+// Handle multiple player panels by scoping to specific panel
+const leftPanel = screen.getByTestId('player-panel-left');
+const playerStatus = leftPanel.querySelector('[data-testid="player-status"]');
+expect(playerStatus).toHaveTextContent(/expected text/);
+```
+
+#### Testing Philosophy
+- **Real components over mocks** - Test actual React components with real game state
+- **Integration over isolation** - Verify components work together correctly
+- **Meaningful assertions** - Test actual functionality, not just presence of elements
+- **EventBridge integration** - Use real event system to trigger game state changes
+- **Spy on hooks** - Access real hook return values to verify game logic integration
 
 ## Recent Major Improvements
 
