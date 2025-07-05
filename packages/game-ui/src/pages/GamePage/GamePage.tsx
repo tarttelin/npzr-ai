@@ -100,15 +100,15 @@ export const GamePage: React.FC<GamePageProps> = () => {
     if (!gameEngine || !players[0] || !players[1]) return null;
     
     return {
-      players: players.map(player => ({
-        name: player.getName(),
-        handSize: player.getHand().size(),
-        handCards: player.getHand().getCards(), // Include actual card data
-        stackCount: player.getMyStacks().length,
+      players: players.filter(player => player !== null).map(player => ({
+        name: player!.getName(),
+        handSize: player!.getHand().size(),
+        handCards: player!.getHand().getCards(), // Include actual card data
+        stackCount: player!.getMyStacks().length,
         isCurrentPlayer: player === currentPlayer
       })),
       currentPlayer: currentPlayer?.getName(),
-      gamePhase: isGameComplete ? 'finished' : 'playing'
+      gamePhase: isGameComplete ? ('finished' as const) : ('playing' as const)
     };
   }, [gameEngine, players, currentPlayer, isGameComplete, players[0]?.getHand().size(), players[1]?.getHand().size()]);
 

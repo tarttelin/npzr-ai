@@ -45,6 +45,21 @@ export interface CanvasEvents {
   'game:cardMove': { cardId: string; fromStackId: string; fromPile: any; toStackId?: string; toPile: any };
   'game:wildNomination': { card: any; character: any; bodyPart: any };
   
+  // PixiJS lifecycle events
+  'pixi:ready': {};
+  'pixi:destroy': void;
+  'pixi:updateGameState': {
+    players: Array<{
+      name: string;
+      handSize: number;
+      handCards: any[];
+      stackCount: number;
+      isCurrentPlayer: boolean;
+    }>;
+    currentPlayer: string | undefined;
+    gamePhase: 'setup' | 'playing' | 'finished';
+  };
+  
   // UI events from React to canvas
   'ui:newGame': void;
   'ui:pauseGame': void;
