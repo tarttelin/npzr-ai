@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Card, Character, BodyPart } from '@npzr/core';
 import { GamePageProps } from '../../types/GameUI.types';
 import { GameHUD } from '../../components/GameHUD/GameHUD';
 import { GameCanvas } from '../../components/GameCanvas/GameCanvas';
+import { WildCardNomination } from '../../components/WildCardNomination/WildCardNomination';
 import { useGameEngine } from '../../hooks/useGameEngine';
 import { usePlayerState } from '../../hooks/usePlayerState';
 import './GamePage.css';
@@ -51,6 +53,44 @@ export const GamePage: React.FC<GamePageProps> = () => {
   // Error handling
   const hasError = engineError || playerError;
   const errorMessage = engineError || playerError;
+
+  // Wild card nomination state
+  const [wildCardNomination, setWildCardNomination] = useState<{
+    isOpen: boolean;
+    card: Card | null;
+    cardName: string;
+  }>({
+    isOpen: false,
+    card: null,
+    cardName: ''
+  });
+
+  // Handle wild card nomination trigger
+  const handleWildCardNominationTrigger = (card: Card, nomination: { character: Character; bodyPart: BodyPart }) => {
+    // If nomination is already provided, use it directly
+    if (nomination.character && nomination.bodyPart) {
+      nominateWild(card, nomination);
+    } else {
+      // Otherwise, show the nomination UI
+      const cardName = `${card.character || 'Wild'} ${card.bodyPart || 'Card'}`;
+      setWildCardNomination({
+        isOpen: true,
+        card,
+        cardName
+      });
+    }
+  };
+
+  const handleNominateWild = (character: Character, bodyPart: BodyPart) => {
+    if (wildCardNomination.card) {
+      nominateWild(wildCardNomination.card, { character, bodyPart });
+    }
+    setWildCardNomination({ isOpen: false, card: null, cardName: '' });
+  };
+
+  const handleCancelNomination = () => {
+    setWildCardNomination({ isOpen: false, card: null, cardName: '' });
+  };
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
@@ -135,7 +175,7 @@ export const GamePage: React.FC<GamePageProps> = () => {
               drawCard,
               playCard,
               moveCard,
-              nominateWild
+              nominateWild: handleWildCardNominationTrigger
             }}
           />
         </div>
@@ -160,6 +200,14 @@ export const GamePage: React.FC<GamePageProps> = () => {
           </small>
         </div>
       )}
+
+      {/* Wild Card Nomination Modal */}
+      <WildCardNomination
+        isOpen={wildCardNomination.isOpen}
+        cardName={wildCardNomination.cardName}
+        onNominate={handleNominateWild}
+        onCancel={handleCancelNomination}
+      />
     </div>
   );
 };

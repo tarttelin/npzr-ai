@@ -2,7 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { GamePage } from './GamePage';
 import { EventBridge } from '../../bridge/EventBridge';
 import * as useGameEngine from '../../hooks/useGameEngine';
-import { PlayerState, PlayerStateType } from '@npzr/core';
+import { PlayerStateType } from '@npzr/core';
 
 // Mock usePixiApp hook
 jest.mock('../../components/GameCanvas/hooks/usePixiApp', () => ({

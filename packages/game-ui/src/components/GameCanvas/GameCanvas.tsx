@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CoreGameCanvasProps } from '../../types/GameUI.types';
 import { usePixiApp } from './hooks/usePixiApp';
+import { logger } from '@npzr/logging';
 import './GameCanvas.css';
 
 /**
@@ -108,13 +109,29 @@ export const GameCanvas: React.FC<CoreGameCanvasProps> = ({
     };
   }, [eventBridge, currentPlayer, gameActions]);
 
+  // Initialize scene with players when they become available
+  useEffect(() => {
+    if (!scene || !players[0] || !players[1]) return;
+
+    // Initialize the scene with both players
+    if (typeof scene.initializeWithPlayers === 'function') {
+      scene.initializeWithPlayers(players);
+      logger.info('Initialized GameplayScene with players');
+    }
+  }, [scene, players]);
+
   // Update canvas scene when game state changes
   useEffect(() => {
     if (!scene || !gameEngine) return;
 
     // Update deck count
     const deckSize = gameEngine.getDeckSize ? gameEngine.getDeckSize() : 44;
-    eventBridge?.emitToCanvas('ui:updateDeck', { cardCount: deckSize });
+    scene.updateDeckCount(deckSize);
+
+    // Update player areas with current game state
+    if (typeof scene.updatePlayerAreas === 'function') {
+      scene.updatePlayerAreas();
+    }
 
     // Update player hands
     if (players[0]) {
@@ -156,6 +173,23 @@ export const GameCanvas: React.FC<CoreGameCanvasProps> = ({
       }
     }
   }, [scene, gameEngine, players, currentPlayer, eventBridge]);
+
+  // Update current player highlighting
+  useEffect(() => {
+    if (!scene || !currentPlayer || !players[0] || !players[1]) return;
+
+    // Determine which player index is current
+    let currentPlayerIndex = 0;
+    if (currentPlayer.getId() === players[1]?.getId()) {
+      currentPlayerIndex = 1;
+    }
+
+    // Update scene to highlight current player
+    if (typeof scene.setCurrentPlayer === 'function') {
+      scene.setCurrentPlayer(currentPlayerIndex);
+      logger.debug(`Set current player to index ${currentPlayerIndex} (${currentPlayer.getName()})`);
+    }
+  }, [scene, currentPlayer, players]);
 
   const [player1, player2] = players;
 

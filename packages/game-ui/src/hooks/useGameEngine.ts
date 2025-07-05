@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine, Player } from '@npzr/core';
 import { AIPlayer } from '@npzr/ai';
+import { logger } from '@npzr/logging';
 
 export interface UseGameEngineOptions {
   enableAI?: boolean;
@@ -71,13 +72,15 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
       setCurrentPlayer(humanPlayer);
       setIsGameComplete(false);
       setWinner(null);
+      
+      logger.info(`New NPZR game created: ${playerName} vs ${aiName} (AI difficulty: ${aiDifficulty})`);
       setIsInitialized(true);
       
       return engine;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize game engine';
       setError(errorMessage);
-      console.error('Game engine initialization error:', err);
+      logger.error('Game engine initialization error:', err);
       return null;
     }
   }, [enableAI, aiDifficulty, playerName, aiName]);
@@ -136,9 +139,9 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
             try {
               // AI will automatically play when it's their turn
               // The AIPlayer should handle turn logic internally
-              console.log('AI turn detected - AI should play automatically');
+              logger.info('AI turn detected - AI should play automatically');
             } catch (err) {
-              console.error('AI turn error:', err);
+              logger.error('AI turn error:', err);
             }
           }, 1000);
         }
@@ -146,7 +149,7 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
       
       setCurrentPlayer(current);
     } catch (err) {
-      console.error('Game state update error:', err);
+      logger.error('Game state update error:', err);
       setError(err instanceof Error ? err.message : 'Game state update failed');
     }
   }, [gameEngine, players]);
