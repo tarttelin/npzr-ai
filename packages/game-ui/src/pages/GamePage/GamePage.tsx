@@ -121,11 +121,6 @@ export const GamePage: React.FC<GamePageProps> = () => {
             winner={winnerState}
             onNewGame={createNewGame}
             onDrawCard={drawCard}
-            gameActions={{
-              playCard,
-              moveCard,
-              nominateWild
-            }}
           />
         </div>
 

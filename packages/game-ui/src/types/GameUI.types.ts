@@ -95,11 +95,6 @@ export interface CoreGameHUDProps {
   winner: PlayerStateInfo | null;
   onNewGame: () => void;
   onDrawCard: () => void;
-  gameActions: {
-    playCard: (card: Card, options?: { targetStackId?: string; targetPile?: any }) => void;
-    moveCard: (options: { cardId: string; fromStackId: string; fromPile: any; toStackId?: string; toPile: any }) => void;
-    nominateWild: (card: Card, nomination: { character: Character; bodyPart: any }) => void;
-  };
 }
 
 // Core engine GameCanvas props

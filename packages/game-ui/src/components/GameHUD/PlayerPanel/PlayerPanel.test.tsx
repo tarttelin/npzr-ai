@@ -2,22 +2,19 @@ import { render, screen } from '@testing-library/react';
 import { PlayerPanel } from './PlayerPanel';
 import { PlayerStateInfo, CharacterType } from '../../../types/GameUI.types';
 import { PlayerStateType } from '@npzr/core';
+import { createPlayerStateInfo } from '../../../test-fixtures';
 
-const mockPlayer: PlayerStateInfo = {
-  id: 'player-1',
+const mockPlayer: PlayerStateInfo = createPlayerStateInfo({
   name: 'Test Player',
   score: ['robot', 'pirate', 'ninja'], // RPN
   handCount: 6,
-  hand: [],
-  stacks: [],
   state: PlayerStateType.DRAW_CARD,
-  stateMessage: 'Draw a card from the deck to start your turn',
   isMyTurn: true,
   canDraw: true,
   canPlay: false,
   canMove: false,
   canNominate: false,
-};
+});
 
 describe('PlayerPanel', () => {
   it('renders without crashing', () => {
@@ -72,7 +69,7 @@ describe('PlayerPanel', () => {
         position="left" 
       />
     );
-    expect(screen.getByTestId('player-status')).toHaveTextContent('Draw a card from the deck to start your turn');
+    expect(screen.getByTestId('player-status')).toHaveTextContent(mockPlayer.stateMessage);
   });
 
   it('shows current player indicator when player is current', () => {
@@ -146,7 +143,7 @@ describe('PlayerPanel', () => {
   });
 
   it('handles empty score correctly', () => {
-    const noScorePlayer = { ...mockPlayer, score: [] as CharacterType[] };
+    const noScorePlayer = createPlayerStateInfo({ score: [] as CharacterType[] });
     render(
       <PlayerPanel 
         player={noScorePlayer} 
@@ -158,10 +155,9 @@ describe('PlayerPanel', () => {
   });
 
   it('handles multiple same characters correctly', () => {
-    const multipleScorePlayer: PlayerStateInfo = { 
-      ...mockPlayer, 
+    const multipleScorePlayer = createPlayerStateInfo({ 
       score: ['robot', 'pirate', 'ninja', 'pirate'] as CharacterType[]
-    }; // RPNP
+    }); // RPNP
     render(
       <PlayerPanel 
         player={multipleScorePlayer} 
