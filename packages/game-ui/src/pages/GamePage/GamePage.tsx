@@ -105,6 +105,16 @@ export const GamePage: React.FC<GamePageProps> = () => {
         handSize: player!.getHand().size(),
         handCards: player!.getHand().getCards(), // Include actual card data
         stackCount: player!.getMyStacks().length,
+        stacks: player!.getMyStacks().map(stack => {
+          const topCards = stack.getTopCards();
+          return {
+            id: stack.getId(),
+            headCard: topCards.head,
+            torsoCard: topCards.torso,
+            legsCard: topCards.legs,
+            isComplete: stack.isComplete()
+          };
+        }),
         isCurrentPlayer: player === currentPlayer
       })),
       currentPlayer: currentPlayer?.getName(),
@@ -132,6 +142,27 @@ export const GamePage: React.FC<GamePageProps> = () => {
       }
     };
 
+    const handleCardPlay = (data: { card: any; targetStackId?: string; targetPile?: string }) => {
+      console.log('Card play event received:', data);
+      
+      if (currentPlayer && currentPlayer.getName().includes('Human')) {
+        const playerState = currentPlayer.getState();
+        if (playerState.canPlayCard()) {
+          console.log('Attempting to play card:', data.card.character, data.card.bodyPart);
+          
+          // For now, just try to play the card - we'll improve targeting later
+          try {
+            playCard(data.card);
+            console.log('Card played successfully');
+          } catch (error) {
+            console.error('Failed to play card:', error);
+          }
+        } else {
+          console.log('Cannot play card in current state:', playerState.getState());
+        }
+      }
+    };
+
     const handlePixiReady = () => {
       console.log('PixiJS is ready, sending initial game state');
       if (gameStateData) {
@@ -141,13 +172,15 @@ export const GamePage: React.FC<GamePageProps> = () => {
     };
 
     eventBridge.onCanvasEvent('game:deckClick', handleDeckClick);
+    eventBridge.onCanvasEvent('game:cardPlay', handleCardPlay);
     eventBridge.onCanvasEvent('pixi:ready', handlePixiReady);
 
     return () => {
       eventBridge.offCanvasEvent('game:deckClick', handleDeckClick);
+      eventBridge.offCanvasEvent('game:cardPlay', handleCardPlay);
       eventBridge.offCanvasEvent('pixi:ready', handlePixiReady);
     };
-  }, [currentPlayer, drawCard, eventBridge, gameStateData]);
+  }, [currentPlayer, drawCard, playCard, eventBridge, gameStateData]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
