@@ -121,9 +121,11 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
         return;
       }
 
-      // Determine current player based on player states
+      // Get current players (the existing references should be updated by the engine)
       const humanPlayer = players[0];
       const aiPlayer = players[1];
+      
+      // Don't force array updates here - let the natural game state changes trigger updates
       
       let current: Player | null = null;
       

@@ -3,6 +3,7 @@ import { Player } from '@npzr/core';
 import { HandSprite } from '../Hand/HandSprite';
 import { StackSprite } from '../Stack/StackSprite';
 import { Z_LAYERS } from '../../utils/Constants';
+import { logger } from '@npzr/logging';
 
 /**
  * PlayerArea configuration
@@ -53,11 +54,60 @@ export class PlayerAreaSprite extends PIXI.Container {
     this.spriteSheet = spriteSheet;
     this.zIndex = Z_LAYERS.PLAYER_AREAS;
     
-    this.createHeader();
-    this.createHandArea();
-    this.createStackAreas();
-    this.layout();
-    this.updateFromPlayer();
+    // ENABLE SORTABLE CHILDREN - needed for z-index to work
+    this.sortableChildren = true;
+    
+    console.log(`PlayerAreaSprite constructor for ${player.getName()}`, {
+      playerName: player.getName(),
+      hasSpriteSheet: !!spriteSheet,
+      playerHandSize: player.getHand().size(),
+      playerStackCount: player.getMyStacks().length
+    });
+    
+    // Also log to the debug logger
+    logger.info(`PlayerAreaSprite constructor for ${player.getName()}`, {
+      playerName: player.getName(),
+      hasSpriteSheet: !!spriteSheet,
+      playerHandSize: player.getHand().size(),
+      playerStackCount: player.getMyStacks().length
+    });
+    
+    // Add a subtle background for the player area
+    const backgroundRect = new PIXI.Graphics();
+    backgroundRect
+      .rect(0, 0, PLAYER_AREA_CONFIG.WIDTH, PLAYER_AREA_CONFIG.HEIGHT)
+      .fill(0x2C2C2C, 0.8) // Dark gray with transparency
+      .stroke({ width: 2, color: 0x444444 }); // Gray border
+    this.addChild(backgroundRect);
+    
+    logger.info(`Added PlayerArea background for ${player.getName()}`);
+    
+    try {
+      this.createHeader();
+      logger.info(`Header created for ${player.getName()}`);
+      
+      this.createHandArea();
+      logger.info(`Hand area created for ${player.getName()}`);
+      
+      this.createStackAreas();
+      logger.info(`Stack areas created for ${player.getName()}`);
+      
+      this.layout();
+      logger.info(`Layout completed for ${player.getName()}`);
+      
+      this.updateFromPlayer();
+      logger.info(`UpdateFromPlayer completed for ${player.getName()}`);
+    } catch (error) {
+      logger.error(`Error in PlayerAreaSprite constructor for ${player.getName()}:`, error);
+      console.error(`Error in PlayerAreaSprite constructor for ${player.getName()}:`, error);
+    }
+    
+    console.log(`PlayerAreaSprite created for ${player.getName()}`, {
+      childrenCount: this.children.length,
+      position: { x: this.x, y: this.y },
+      visible: this.visible,
+      zIndex: this.zIndex
+    });
   }
 
   /**
@@ -101,31 +151,100 @@ export class PlayerAreaSprite extends PIXI.Container {
    * Create the hand area
    */
   private createHandArea(): void {
-    const hand = this.player.getHand();
-    this.handSprite = new HandSprite(hand, 600, this.spriteSheet);
+    try {
+      const hand = this.player.getHand();
+      console.log(`Creating hand area for ${this.player.getName()}`, {
+        handSize: hand.size(),
+        handCards: hand.getCards().length
+      });
+      
+      this.handSprite = new HandSprite(hand, 600, this.spriteSheet);
+      this.addChild(this.handSprite);
+      
+      console.log(`Hand area created for ${this.player.getName()}`, {
+        handSpriteChildren: this.handSprite.children.length,
+        handSpriteVisible: this.handSprite.visible
+      });
+    } catch (error) {
+      logger.error(`Error creating hand area for ${this.player.getName()}:`, error);
+      console.error(`Error creating hand area for ${this.player.getName()}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update the hand area with current player's hand
+   */
+  private updateHandArea(): void {
+    if (this.handSprite) {
+      // Remove old hand sprite
+      this.removeChild(this.handSprite);
+      this.handSprite.destroy();
+    }
+
+    // Create new hand sprite with current player's hand
+    const currentHand = this.player.getHand();
+    logger.info(`Updating hand area for ${this.player.getName()}`, {
+      handSize: currentHand.size(),
+      handCards: currentHand.getCards().length
+    });
+    
+    this.handSprite = new HandSprite(currentHand, 600, this.spriteSheet);
     this.addChild(this.handSprite);
+    
+    // Re-position the hand sprite
+    this.handSprite.x = PLAYER_AREA_CONFIG.SPACING.SIDE_PADDING;
+    this.handSprite.y = PLAYER_AREA_CONFIG.HEADER.HEIGHT + 10;
+    
+    logger.info(`Hand area updated for ${this.player.getName()}: ${currentHand.size()} cards`);
   }
 
   /**
    * Create stack areas for the player
    */
   private createStackAreas(): void {
-    const stacks = this.player.getMyStacks();
-    
-    // Create up to 3 stacks initially (players can have multiple stacks)
-    const maxStacks = Math.max(3, stacks.length);
-    
-    for (let i = 0; i < maxStacks; i++) {
-      const stack = stacks[i];
-      if (stack) {
-        const stackSprite = new StackSprite(stack, this.spriteSheet);
-        this.stackSprites.push(stackSprite);
-        this.addChild(stackSprite);
-      } else {
-        // Create empty stack placeholder
-        const emptyStack = this.createEmptyStackPlaceholder();
-        this.addChild(emptyStack);
+    try {
+      const stacks = this.player.getMyStacks();
+      
+      console.log(`Creating stack areas for ${this.player.getName()}`, {
+        stacksCount: stacks.length,
+        stacksData: stacks.map(s => ({ 
+          id: s.getId(), 
+          cards: s.getCardCount()
+        }))
+      });
+      
+      // Create up to 3 stacks initially (players can have multiple stacks)
+      const maxStacks = Math.max(3, stacks.length);
+      
+      for (let i = 0; i < maxStacks; i++) {
+        const stack = stacks[i];
+        if (stack) {
+          const stackSprite = new StackSprite(stack, this.spriteSheet);
+          this.stackSprites.push(stackSprite);
+          this.addChild(stackSprite);
+          
+          console.log(`Created stack sprite ${i} for ${this.player.getName()}`, {
+            stackId: stack.getId(),
+            stackSpriteChildren: stackSprite.children.length
+          });
+        } else {
+          // Create empty stack placeholder
+          const emptyStack = this.createEmptyStackPlaceholder();
+          this.addChild(emptyStack);
+          
+          console.log(`Created empty stack placeholder ${i} for ${this.player.getName()}`);
+        }
       }
+      
+      console.log(`Stack areas created for ${this.player.getName()}`, {
+        totalStackSprites: this.stackSprites.length,
+        totalChildren: this.children.length
+      });
+    } catch (error) {
+      logger.error(`Error creating stack areas for ${this.player.getName()}:`, error);
+      console.error(`Error creating stack areas for ${this.player.getName()}:`, error);
+      throw error;
     }
   }
 
@@ -219,8 +338,12 @@ export class PlayerAreaSprite extends PIXI.Container {
    * Update visual representation from player state
    */
   updateFromPlayer(): void {
+    logger.info(`updateFromPlayer called for ${this.player.getName()}`);
+    
     // Update texts
+    const oldName = this.nameText.text;
     this.nameText.text = this.player.getName();
+    logger.info(`Updated name text from "${oldName}" to "${this.nameText.text}"`);
     
     const score = this.player.getMyScore();
     const completedCharacters = Array.from(score.getCompletedCharacters());
@@ -228,9 +351,14 @@ export class PlayerAreaSprite extends PIXI.Container {
     
     const playerState = this.player.getState();
     this.stateText.text = playerState.getMessage();
+    
+    // RADICAL: Recreate ALL text objects to force rendering
+    this.recreateAllText();
+    
+    logger.info(`Updated all text for ${this.player.getName()}: name="${this.nameText.text}", state="${this.stateText.text}"`);
 
-    // Update hand
-    this.handSprite.updateVisual();
+    // Update hand - recreate with current player's hand
+    this.updateHandArea();
 
     // Update stacks
     const currentStacks = this.player.getMyStacks();
@@ -260,6 +388,73 @@ export class PlayerAreaSprite extends PIXI.Container {
 
     // Re-layout after changes
     this.layout();
+  }
+
+  /**
+   * Recreate all text objects to force rendering
+   */
+  private recreateAllText(): void {
+    // Destroy old text objects
+    this.headerContainer.removeChild(this.nameText);
+    this.headerContainer.removeChild(this.scoreText);
+    this.headerContainer.removeChild(this.stateText);
+    this.nameText.destroy();
+    this.scoreText.destroy();
+    this.stateText.destroy();
+    
+    // Create new text objects
+    this.nameText = new PIXI.Text(this.player.getName(), {
+      fontFamily: PLAYER_AREA_CONFIG.HEADER.FONT_FAMILY,
+      fontSize: PLAYER_AREA_CONFIG.HEADER.FONT_SIZE,
+      fill: 0xFFFFFF,
+      fontWeight: 'bold',
+    });
+    this.nameText.x = 10;
+    this.nameText.y = 10;
+    this.headerContainer.addChild(this.nameText);
+    
+    const score = this.player.getMyScore();
+    const completedCharacters = Array.from(score.getCompletedCharacters());
+    this.scoreText = new PIXI.Text(`Score: ${completedCharacters.length} (${completedCharacters.join(', ')})`, {
+      fontFamily: PLAYER_AREA_CONFIG.HEADER.FONT_FAMILY,
+      fontSize: PLAYER_AREA_CONFIG.SCORE_DISPLAY.FONT_SIZE,
+      fill: 0xCCCCCC,
+    });
+    this.scoreText.x = 200;
+    this.scoreText.y = 10;
+    this.headerContainer.addChild(this.scoreText);
+    
+    const playerState = this.player.getState();
+    this.stateText = new PIXI.Text(playerState.getMessage(), {
+      fontFamily: PLAYER_AREA_CONFIG.HEADER.FONT_FAMILY,
+      fontSize: PLAYER_AREA_CONFIG.SCORE_DISPLAY.FONT_SIZE,
+      fill: 0xFFFF00,
+    });
+    this.stateText.x = 10;
+    this.stateText.y = 25;
+    this.headerContainer.addChild(this.stateText);
+    
+    logger.info(`Recreated all text objects for ${this.player.getName()}`);
+  }
+
+  /**
+   * Update the player reference (for replacing mock players with real ones)
+   */
+  updatePlayer(newPlayer: Player, spriteSheet?: PIXI.Texture): void {
+    logger.info(`PlayerAreaSprite.updatePlayer: ${this.player.getName()} → ${newPlayer.getName()}`);
+    console.log(`PlayerAreaSprite.updatePlayer: ${this.player.getName()} → ${newPlayer.getName()}`);
+    
+    const oldPlayerName = this.player.getName();
+    this.player = newPlayer;
+    this.spriteSheet = spriteSheet;
+    
+    logger.info(`Player reference updated, calling updateFromPlayer()`);
+    console.log(`Player reference updated from ${oldPlayerName} to ${this.player.getName()}`);
+    
+    this.updateFromPlayer();
+    
+    logger.info(`updatePlayer completed for ${this.player.getName()}`);
+    console.log(`updatePlayer completed for ${this.player.getName()}`);
   }
 
   /**

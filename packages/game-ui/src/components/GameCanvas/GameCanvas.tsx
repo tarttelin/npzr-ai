@@ -26,13 +26,31 @@ export const GameCanvas: React.FC<CoreGameCanvasProps> = ({
 }) => {
   const [canvasSize, setCanvasSize] = useState({ width, height });
 
+  // Stable onResize callback
+  const handleResize = React.useCallback((newWidth: number, newHeight: number) => {
+    setCanvasSize({ width: newWidth, height: newHeight });
+  }, []);
+
   const { containerRef, scene, eventBridge } = usePixiApp({
     width: canvasSize.width,
     height: canvasSize.height,
-    onResize: (newWidth, newHeight) => {
-      setCanvasSize({ width: newWidth, height: newHeight });
-    },
+    onResize: handleResize,
   });
+
+  // Debug when scene becomes available
+  React.useEffect(() => {
+    logger.info('Scene availability changed', { hasScene: !!scene });
+  }, [scene]);
+
+  // Debug when players become available
+  React.useEffect(() => {
+    logger.info('Players availability changed', { 
+      hasPlayer1: !!players[0], 
+      hasPlayer2: !!players[1],
+      player1Name: players[0]?.getName(),
+      player2Name: players[1]?.getName()
+    });
+  }, [players]);
 
   // Handle window resize
   useEffect(() => {
@@ -111,12 +129,36 @@ export const GameCanvas: React.FC<CoreGameCanvasProps> = ({
 
   // Initialize scene with players when they become available
   useEffect(() => {
-    if (!scene || !players[0] || !players[1]) return;
+    logger.debug('Checking player initialization', { 
+      hasScene: !!scene, 
+      player1: !!players[0], 
+      player2: !!players[1],
+      hasInitializeMethod: scene && typeof scene.initializeWithPlayers === 'function'
+    });
+
+    if (!scene) {
+      logger.warn('No scene available for player initialization');
+      return;
+    }
+
+    if (!players[0] || !players[1]) {
+      logger.warn('Players not ready for initialization', { 
+        player1: !!players[0], 
+        player2: !!players[1] 
+      });
+      return;
+    }
 
     // Initialize the scene with both players
     if (typeof scene.initializeWithPlayers === 'function') {
+      logger.info('Initializing GameplayScene with players', {
+        player1Name: players[0]?.getName(),
+        player2Name: players[1]?.getName()
+      });
       scene.initializeWithPlayers(players);
-      logger.info('Initialized GameplayScene with players');
+      logger.info('Successfully initialized GameplayScene with players');
+    } else {
+      logger.error('Scene does not have initializeWithPlayers method');
     }
   }, [scene, players]);
 
@@ -128,9 +170,9 @@ export const GameCanvas: React.FC<CoreGameCanvasProps> = ({
     const deckSize = gameEngine.getDeckSize ? gameEngine.getDeckSize() : 44;
     scene.updateDeckCount(deckSize);
 
-    // Update player areas with current game state
+    // Update player areas with current game state - pass fresh player references
     if (typeof scene.updatePlayerAreas === 'function') {
-      scene.updatePlayerAreas();
+      scene.updatePlayerAreas(players);
     }
 
     // Update player hands

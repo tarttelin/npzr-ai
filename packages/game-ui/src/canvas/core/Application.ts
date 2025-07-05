@@ -16,10 +16,11 @@ export class CanvasApplication {
    */
   async init(container: HTMLElement, width: number, height: number): Promise<void> {
     if (this.isInitialized) {
-      throw new Error('Canvas application is already initialized');
+      console.warn('Canvas application is already initialized, skipping...');
+      return;
     }
 
-    // Initialize PixiJS Application
+    console.log('Initializing PixiJS Application with dimensions:', { width, height });
     
     this.container = container;
     this.app = new PIXI.Application();
@@ -35,9 +36,10 @@ export class CanvasApplication {
         preference: 'webgl', // Prefer WebGL for better compatibility
       });
       
-      // PixiJS Application initialized successfully
+      console.log('✅ PixiJS Application initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize PixiJS Application:', error);
+      this.isInitialized = false;
       throw error;
     }
 
@@ -48,6 +50,7 @@ export class CanvasApplication {
     this.setupContextLossRecovery();
     
     this.isInitialized = true;
+    console.log('✅ PixiJS Application setup completed');
   }
 
   /**
@@ -160,6 +163,7 @@ export class CanvasApplication {
    * Cleanup and destroy the application
    */
   destroy(): void {
+    console.log('🗑️ Destroying PixiJS Application...');
     
     // Remove WebGL context event listeners
     if (this.app?.canvas && this.contextLostHandler) {
@@ -171,7 +175,7 @@ export class CanvasApplication {
       try {
         // Properly destroy with cleanup options
         this.app.destroy(true, { children: true, texture: true });
-        // PixiJS Application destroyed successfully
+        console.log('✅ PixiJS Application destroyed successfully');
       } catch (error) {
         console.warn('⚠️ Error during PixiJS Application destruction:', error);
       }
@@ -179,5 +183,6 @@ export class CanvasApplication {
     }
     this.container = null;
     this.isInitialized = false;
+    console.log('🗑️ PixiJS Application destruction completed');
   }
 }

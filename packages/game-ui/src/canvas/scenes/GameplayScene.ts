@@ -4,6 +4,7 @@ import { CanvasApplication } from '../core/Application';
 import { DeckSprite } from '../entities/Deck/DeckSprite';
 import { PlayerAreaSprite } from '../entities/PlayerArea/PlayerAreaSprite';
 import { InteractionSystem } from '../systems/InteractionSystem';
+import { Z_LAYERS } from '../utils/Constants';
 import { logger } from '@npzr/logging';
 
 /**
@@ -20,6 +21,10 @@ export class GameplayScene extends PIXI.Container {
     this.app = app;
     this.interactionSystem = new InteractionSystem(app);
     
+    // ENABLE SORTABLE CHILDREN - might fix rendering issues
+    this.sortableChildren = true;
+    logger.info('GameplayScene constructor - enabled sortableChildren');
+    
     this.setupScene();
   }
 
@@ -29,13 +34,55 @@ export class GameplayScene extends PIXI.Container {
   private setupScene(): void {
     // Create and add deck sprite
     this.deckSprite = new DeckSprite();
+    this.deckSprite.zIndex = Z_LAYERS.DECK;
     this.addChild(this.deckSprite);
+    
+    // SOLUTION: Pre-create empty PlayerAreaSprites during setupScene
+    this.createEmptyPlayerAreas();
     
     // Setup deck interactions
     this.setupDeckInteractions();
     
     // Position elements based on current canvas size
     this.layout();
+  }
+
+  /**
+   * Pre-create empty PlayerAreaSprites during setupScene (when rendering works)
+   */
+  private createEmptyPlayerAreas(): void {
+    // Create mock players for initial setup
+    const mockPlayers = [
+      {
+        getName: () => 'Player 1 (Loading...)',
+        getHand: () => ({ size: () => 0, getCards: () => [] }),
+        getMyStacks: () => [],
+        getMyScore: () => ({ getCompletedCharacters: () => new Set() }),
+        getState: () => ({ getMessage: () => 'Waiting for game...' })
+      },
+      {
+        getName: () => 'Player 2 (Loading...)',
+        getHand: () => ({ size: () => 0, getCards: () => [] }),
+        getMyStacks: () => [],
+        getMyScore: () => ({ getCompletedCharacters: () => new Set() }),
+        getState: () => ({ getMessage: () => 'Waiting for game...' })
+      }
+    ] as any[];
+    
+    // Create PlayerAreaSprites during setupScene when rendering works
+    mockPlayers.forEach((mockPlayer, index) => {
+      try {
+        const playerArea = new PlayerAreaSprite(mockPlayer);
+        playerArea.x = 100 + (index * 400);
+        playerArea.y = 300;
+        playerArea.zIndex = 10 + index;
+        this.playerAreas.push(playerArea);
+        this.addChild(playerArea);
+        logger.info(`Pre-created PlayerAreaSprite ${index} during setupScene`);
+      } catch (error) {
+        logger.error(`Error creating PlayerAreaSprite ${index}:`, error);
+      }
+    });
   }
 
   /**
@@ -96,6 +143,13 @@ export class GameplayScene extends PIXI.Container {
     const availableHeight = canvasHeight - 40; // Leave some margin
     const areaHeight = 300;
     
+    logger.info('Laying out player areas', {
+      canvasHeight,
+      availableHeight,
+      areaHeight,
+      playerAreaCount: this.playerAreas.length
+    });
+    
     this.playerAreas.forEach((playerArea, index) => {
       // Position human player at bottom, AI at top
       if (index === 0) {
@@ -107,6 +161,12 @@ export class GameplayScene extends PIXI.Container {
         playerArea.x = 200;
         playerArea.y = 20;
       }
+      
+      logger.info(`Positioned player area ${index}`, {
+        position: { x: playerArea.x, y: playerArea.y },
+        visible: playerArea.visible,
+        alpha: playerArea.alpha
+      });
     });
   }
 
@@ -147,29 +207,40 @@ export class GameplayScene extends PIXI.Container {
   }
 
   /**
-   * Initialize game with players
+   * Initialize game with players - UPDATE EXISTING APPROACH
    */
   initializeWithPlayers(players: [Player | null, Player | null], spriteSheet?: PIXI.Texture): void {
+    logger.info('GameplayScene.initializeWithPlayers called - updating existing PlayerAreaSprites');
     
-    // Clear existing player areas
-    this.clearPlayerAreas();
-    
-    // Create player areas for each player
+    // Update existing PlayerAreaSprites with real player data
     players.forEach((player, index) => {
-      if (player) {
-        const playerArea = new PlayerAreaSprite(player, spriteSheet);
-        this.playerAreas.push(playerArea);
-        this.addChild(playerArea);
+      if (player && this.playerAreas[index]) {
+        logger.info(`Updating PlayerAreaSprite ${index} with ${player.getName()}`);
         
-        // Setup player area interactions
-        this.setupPlayerAreaInteractions(playerArea, index);
-        
-        logger.info(`Created player area for ${player.getName()}`);
+        try {
+          // Use proper method to update the player
+          logger.info(`About to call updatePlayer on PlayerAreaSprite ${index}`);
+          console.log(`About to call updatePlayer on PlayerAreaSprite ${index} with player: ${player.getName()}`);
+          
+          if (typeof this.playerAreas[index].updatePlayer === 'function') {
+            this.playerAreas[index].updatePlayer(player, spriteSheet);
+            logger.info(`updatePlayer call completed for ${index}`);
+          } else {
+            logger.error(`updatePlayer method not found on PlayerAreaSprite ${index}`);
+            console.error(`updatePlayer method not found on PlayerAreaSprite ${index}`);
+          }
+          
+          logger.info(`Successfully updated PlayerAreaSprite ${index} - should now show ${player.getName()}`);
+        } catch (error) {
+          logger.error(`Error updating PlayerAreaSprite ${index}:`, error);
+          console.error(`Error updating PlayerAreaSprite ${index}:`, error);
+        }
+      } else {
+        logger.warn(`Cannot update PlayerAreaSprite ${index}: player=${!!player}, playerArea=${!!this.playerAreas[index]}`);
       }
     });
     
-    // Re-layout with new player areas
-    this.layout();
+    logger.info('Player area updates completed');
   }
 
   /**
@@ -242,10 +313,20 @@ export class GameplayScene extends PIXI.Container {
   /**
    * Update all player areas from current game state
    */
-  updatePlayerAreas(): void {
-    this.playerAreas.forEach(playerArea => {
-      playerArea.updateFromPlayer();
-    });
+  updatePlayerAreas(players?: [Player | null, Player | null]): void {
+    if (players) {
+      // Update with fresh player references
+      players.forEach((player, index) => {
+        if (player && this.playerAreas[index]) {
+          this.playerAreas[index].updatePlayer(player);
+        }
+      });
+    } else {
+      // Fallback to updating with existing references
+      this.playerAreas.forEach(playerArea => {
+        playerArea.updateFromPlayer();
+      });
+    }
   }
 
   /**

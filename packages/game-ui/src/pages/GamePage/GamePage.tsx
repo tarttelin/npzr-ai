@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, Character, BodyPart } from '@npzr/core';
 import { GamePageProps } from '../../types/GameUI.types';
 import { GameHUD } from '../../components/GameHUD/GameHUD';
-import { GameCanvas } from '../../components/GameCanvas/GameCanvas';
+import { EventBridge } from '../../bridge/EventBridge';
+import { SimplePixiCanvas } from '../../components/SimplePixiCanvas/SimplePixiCanvas';
 import { WildCardNomination } from '../../components/WildCardNomination/WildCardNomination';
 import { useGameEngine } from '../../hooks/useGameEngine';
 import { usePlayerState } from '../../hooks/usePlayerState';
@@ -19,6 +20,8 @@ import './GamePage.css';
  * - AI opponent integration
  */
 export const GamePage: React.FC<GamePageProps> = () => {
+  const eventBridge = EventBridge.getInstance();
+  
   // Core game engine integration
   const { 
     gameEngine, 
@@ -92,6 +95,46 @@ export const GamePage: React.FC<GamePageProps> = () => {
     setWildCardNomination({ isOpen: false, card: null, cardName: '' });
   };
 
+  // Send game state updates to PixiJS (memoized to prevent infinite loops)
+  const gameStateData = React.useMemo(() => {
+    if (!gameEngine || !players[0] || !players[1]) return null;
+    
+    return {
+      players: players.map(player => ({
+        name: player.getName(),
+        handSize: player.getHand().size(),
+        stackCount: player.getMyStacks().length,
+        isCurrentPlayer: player === currentPlayer
+      })),
+      currentPlayer: currentPlayer?.getName(),
+      gamePhase: isGameComplete ? 'finished' : 'playing'
+    };
+  }, [gameEngine, players, currentPlayer, isGameComplete]);
+
+  React.useEffect(() => {
+    if (gameStateData) {
+      eventBridge.emitToCanvas('pixi:updateGameState', gameStateData);
+    }
+  }, [gameStateData, eventBridge]);
+
+  // Listen for events from PixiJS
+  React.useEffect(() => {
+    const handleDeckClick = () => {
+      if (currentPlayer && currentPlayer.getName().includes('Human')) {
+        const playerState = currentPlayer.getState();
+        if (playerState.canDrawCard()) {
+          drawCard();
+        }
+      }
+    };
+
+    eventBridge.onCanvasEvent('game:deckClick', handleDeckClick);
+
+    return () => {
+      eventBridge.offCanvasEvent('game:deckClick', handleDeckClick);
+    };
+  }, [currentPlayer, drawCard, eventBridge]);
+
   // Handle keyboard shortcuts
   React.useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -152,7 +195,7 @@ export const GamePage: React.FC<GamePageProps> = () => {
     <div className="game-page" data-testid="game-page">
       <div className="game-page__container">
         {/* HUD Section */}
-        <div className="game-page__hud">
+        <div className="game-page__hud react-ui-interactive">
           <GameHUD
             player1={player1}
             player2={player2}
@@ -164,19 +207,11 @@ export const GamePage: React.FC<GamePageProps> = () => {
           />
         </div>
 
-        {/* Canvas Section */}
+        {/* Simple PixiJS Canvas */}
         <div className="game-page__canvas">
-          <GameCanvas
-            gameEngine={gameEngine}
-            players={players}
-            currentPlayer={currentPlayer}
-            gamePhase={gamePhase}
-            gameActions={{
-              drawCard,
-              playCard,
-              moveCard,
-              nominateWild: handleWildCardNominationTrigger
-            }}
+          <SimplePixiCanvas 
+            width={800} 
+            height={600}
           />
         </div>
       </div>
@@ -202,12 +237,14 @@ export const GamePage: React.FC<GamePageProps> = () => {
       )}
 
       {/* Wild Card Nomination Modal */}
-      <WildCardNomination
-        isOpen={wildCardNomination.isOpen}
-        cardName={wildCardNomination.cardName}
-        onNominate={handleNominateWild}
-        onCancel={handleCancelNomination}
-      />
+      <div className="react-ui-interactive">
+        <WildCardNomination
+          isOpen={wildCardNomination.isOpen}
+          cardName={wildCardNomination.cardName}
+          onNominate={handleNominateWild}
+          onCancel={handleCancelNomination}
+        />
+      </div>
     </div>
   );
 };
