@@ -103,17 +103,21 @@ export const GamePage: React.FC<GamePageProps> = () => {
       players: players.map(player => ({
         name: player.getName(),
         handSize: player.getHand().size(),
+        handCards: player.getHand().getCards(), // Include actual card data
         stackCount: player.getMyStacks().length,
         isCurrentPlayer: player === currentPlayer
       })),
       currentPlayer: currentPlayer?.getName(),
       gamePhase: isGameComplete ? 'finished' : 'playing'
     };
-  }, [gameEngine, players, currentPlayer, isGameComplete]);
+  }, [gameEngine, players, currentPlayer, isGameComplete, players[0]?.getHand().size(), players[1]?.getHand().size()]);
 
   React.useEffect(() => {
     if (gameStateData) {
+      console.log('React sending game state to PixiJS:', gameStateData);
       eventBridge.emitToCanvas('pixi:updateGameState', gameStateData);
+    } else {
+      console.log('No game state data to send to PixiJS');
     }
   }, [gameStateData, eventBridge]);
 
@@ -128,12 +132,22 @@ export const GamePage: React.FC<GamePageProps> = () => {
       }
     };
 
+    const handlePixiReady = () => {
+      console.log('PixiJS is ready, sending initial game state');
+      if (gameStateData) {
+        console.log('Sending initial state to PixiJS:', gameStateData);
+        eventBridge.emitToCanvas('pixi:updateGameState', gameStateData);
+      }
+    };
+
     eventBridge.onCanvasEvent('game:deckClick', handleDeckClick);
+    eventBridge.onCanvasEvent('pixi:ready', handlePixiReady);
 
     return () => {
       eventBridge.offCanvasEvent('game:deckClick', handleDeckClick);
+      eventBridge.offCanvasEvent('pixi:ready', handlePixiReady);
     };
-  }, [currentPlayer, drawCard, eventBridge]);
+  }, [currentPlayer, drawCard, eventBridge, gameStateData]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
