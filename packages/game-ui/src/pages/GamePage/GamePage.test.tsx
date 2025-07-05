@@ -4,15 +4,33 @@ import { EventBridge } from '../../bridge/EventBridge';
 import * as useGameEngine from '../../hooks/useGameEngine';
 import { PlayerStateType } from '@npzr/core';
 
-// Mock usePixiApp hook
-jest.mock('../../components/GameCanvas/hooks/usePixiApp', () => ({
-  usePixiApp: jest.fn(() => ({
-    containerRef: { current: null },
-    app: null,
-    eventBridge: EventBridge.getInstance(),
-    resize: jest.fn(),
-    cleanup: jest.fn(),
+// Mock PixiJS for testing since it requires WebGL
+jest.mock('pixi.js', () => ({
+  Application: jest.fn(),
+  Assets: {
+    load: jest.fn().mockResolvedValue({}),
+  },
+  Graphics: jest.fn(() => ({
+    rect: jest.fn().mockReturnThis(),
+    fill: jest.fn().mockReturnThis(),
+    stroke: jest.fn().mockReturnThis(),
+    on: jest.fn(),
   })),
+  Text: jest.fn(() => ({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 20,
+  })),
+  Container: jest.fn(() => ({
+    x: 0,
+    y: 0,
+    addChild: jest.fn(),
+    removeChildren: jest.fn(),
+  })),
+  Texture: jest.fn(),
+  Sprite: jest.fn(),
+  Rectangle: jest.fn(),
 }));
 
 describe('GamePage', () => {
@@ -30,9 +48,11 @@ describe('GamePage', () => {
     expect(screen.getByTestId('game-hud')).toBeInTheDocument();
   });
 
-  it('renders GameCanvas component', () => {
+  it('renders PixiJS canvas container', () => {
     render(<GamePage />);
-    expect(screen.getByTestId('game-canvas')).toBeInTheDocument();
+    // SimplePixiCanvas renders as a div container, no specific test-id
+    const canvasSection = document.querySelector('.game-page__canvas');
+    expect(canvasSection).toBeInTheDocument();
   });
 
   it('passes game state to child components', () => {
@@ -40,7 +60,8 @@ describe('GamePage', () => {
     
     // Check that real components are rendering with game data
     expect(screen.getByText(/Current game phase: playing/)).toBeInTheDocument();
-    expect(screen.getByTestId('game-canvas')).toBeInTheDocument();
+    const canvasSection = document.querySelector('.game-page__canvas');
+    expect(canvasSection).toBeInTheDocument();
   });
 
   it('calls createNewGame when new game button is clicked', () => {

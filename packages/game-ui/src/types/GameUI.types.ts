@@ -97,21 +97,6 @@ export interface CoreGameHUDProps {
   onDrawCard: () => void;
 }
 
-// Core engine GameCanvas props
-export interface CoreGameCanvasProps {
-  width?: number;
-  height?: number;
-  gameEngine: any; // GameEngine from @npzr/core
-  players: [any | null, any | null]; // Player objects from @npzr/core
-  currentPlayer: any | null; // Player object from @npzr/core
-  gamePhase: 'setup' | 'playing' | 'finished';
-  gameActions: {
-    drawCard: () => void;
-    playCard: (card: Card, options?: { targetStackId?: string; targetPile?: any }) => void;
-    moveCard: (options: { cardId: string; fromStackId: string; fromPile: any; toStackId?: string; toPile: any }) => void;
-    nominateWild: (card: Card, nomination: { character: Character; bodyPart: any }) => void;
-  };
-}
 
 // Core engine PlayerPanel props
 export interface CorePlayerPanelProps {

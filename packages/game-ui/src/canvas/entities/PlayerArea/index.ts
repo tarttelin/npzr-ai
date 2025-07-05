@@ -1,1 +1,0 @@
-export { PlayerAreaSprite, PLAYER_AREA_CONFIG } from './PlayerAreaSprite';
