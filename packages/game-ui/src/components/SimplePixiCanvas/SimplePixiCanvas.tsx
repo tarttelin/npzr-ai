@@ -25,7 +25,8 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<PIXI.Application | null>(null);
   const eventBridge = EventBridge.getInstance();
-  const handContainerRef = useRef<HandContainerSprite | null>(null);
+  const humanHandContainerRef = useRef<HandContainerSprite | null>(null);
+  const aiHandContainerRef = useRef<HandContainerSprite | null>(null);
   const stacksContainerRef = useRef<PIXI.Container | null>(null);
   const spriteSheetRef = useRef<PIXI.Texture | null>(null);
 
@@ -101,7 +102,19 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
         handContainer.setCardDragHandler(makeCardDraggable);
         
         app.stage.addChild(handContainer);
-        handContainerRef.current = handContainer;
+        humanHandContainerRef.current = handContainer;
+
+        // Create hand container for AI player using HandContainerSprite  
+        const aiHandContainer = new HandContainerSprite({
+          x: 50,
+          y: 50, // Near top for AI player
+          playerName: 'AI Opponent',
+          spriteSheet: spriteSheetRef.current || undefined,
+          makeCardsDraggable: false // AI cards should not be draggable
+        });
+        
+        app.stage.addChild(aiHandContainer);
+        aiHandContainerRef.current = aiHandContainer;
 
         // Create stack areas for human player
         const stacksContainer = new PIXI.Container();
@@ -143,15 +156,25 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       logger.info('PixiJS received game state update:', gameState);
       console.log('PixiJS received game state update:', gameState);
       
-      if (appRef.current && handContainerRef.current && gameState?.players?.[0]) {
-        console.log('Updating human player hand with:', gameState.players[0]);
-        updateHumanPlayerHand(gameState.players[0]);
-        updateHumanPlayerStacks(gameState.players[0]);
+      if (appRef.current && humanHandContainerRef.current && gameState?.players) {
+        // Update human player (typically players[0])
+        if (gameState.players[0]) {
+          console.log('Updating human player hand with:', gameState.players[0]);
+          updatePlayerHand(humanHandContainerRef.current, gameState.players[0]);
+          updateHumanPlayerStacks(gameState.players[0]);
+        }
+        
+        // Update AI player (typically players[1])
+        if (gameState.players[1] && aiHandContainerRef.current) {
+          console.log('Updating AI player hand with:', gameState.players[1]);
+          updatePlayerHand(aiHandContainerRef.current, gameState.players[1]);
+        }
       } else {
-        console.log('Cannot update hand - missing components:', {
+        console.log('Cannot update hands - missing components:', {
           hasApp: !!appRef.current,
-          hasHandContainer: !!handContainerRef.current,
-          hasPlayerData: !!gameState?.players?.[0]
+          hasHumanHandContainer: !!humanHandContainerRef.current,
+          hasAIHandContainer: !!aiHandContainerRef.current,
+          hasPlayerData: !!gameState?.players
         });
       }
     };
@@ -243,7 +266,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
           // Emit event to React for game engine integration
           eventBridge.emitToReact('game:cardPlay', { 
             card: stageDragData.card,
-            targetStackId: dropTarget.isNewStack ? 'new' : `stack-${dropTarget.stackIndex}`,
+            targetStackId: dropTarget.isNewStack ? 'new' : `stack${dropTarget.stackIndex + 1}`,
             targetPile: dropTarget.bodyPart
           });
           
@@ -313,13 +336,12 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
 
 
   /**
-   * Update human player hand display (using HandContainerSprite)
+   * Update player hand display (using HandContainerSprite) - works for both human and AI
    */
-  const updateHumanPlayerHand = (playerData: any) => {
-    const handContainer = handContainerRef.current;
+  const updatePlayerHand = (handContainer: HandContainerSprite, playerData: any) => {
     if (!handContainer || !appRef.current) return;
     
-    logger.info('Updating human player hand display', { 
+    logger.info('Updating player hand display', { 
       handSize: playerData.handSize,
       playerName: playerData.name,
       hasCardData: !!playerData.handCards,

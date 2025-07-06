@@ -182,10 +182,9 @@ export const GamePage: React.FC<GamePageProps> = () => {
               playCard(data.card, { targetPile });
             } else {
               // Playing to an existing stack
-              const stackId = data.targetStackId!.replace('stack-', ''); // Remove 'stack-' prefix
-              console.log('Playing to existing stack with options:', { targetStackId: stackId, targetPile });
+              console.log('Playing to existing stack with options:', { targetStackId: data.targetStackId, targetPile });
               playCard(data.card, { 
-                targetStackId: stackId,
+                targetStackId: data.targetStackId,
                 targetPile 
               });
             }
@@ -217,7 +216,7 @@ export const GamePage: React.FC<GamePageProps> = () => {
       eventBridge.offCanvasEvent('game:cardPlay', handleCardPlay);
       eventBridge.offCanvasEvent('pixi:ready', handlePixiReady);
     };
-  }, [currentPlayer, drawCard, playCard, eventBridge, gameStateData]);
+  }, [currentPlayer, drawCard, playCard, eventBridge]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
