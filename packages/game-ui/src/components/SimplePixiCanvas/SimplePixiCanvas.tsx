@@ -262,11 +262,11 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
         const dropTarget = findDropTarget(event.global);
         
         if (dropTarget) {
-          console.log('Dropped card on stack:', dropTarget.stackIndex, 'body part:', dropTarget.bodyPart, 'new stack:', dropTarget.isNewStack);
+          console.log('Dropped card on stack:', dropTarget.gameStackId, 'body part:', dropTarget.bodyPart, 'new stack:', dropTarget.isNewStack);
           // Emit event to React for game engine integration
           eventBridge.emitToReact('game:cardPlay', { 
             card: stageDragData.card,
-            targetStackId: dropTarget.isNewStack ? 'new' : `stack${dropTarget.stackIndex + 1}`,
+            targetStackId: dropTarget.gameStackId,
             targetPile: dropTarget.bodyPart
           });
           
@@ -289,7 +289,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
   /**
    * Find the drop target (stack area and body part) under the pointer (using StackAreaSprite)
    */
-  const findDropTarget = (globalPos: PIXI.Point): { stackIndex: number; bodyPart: string; isNewStack: boolean } | null => {
+  const findDropTarget = (globalPos: PIXI.Point): { gameStackId: string; bodyPart: string; isNewStack: boolean } | null => {
     const stacksContainer = stacksContainerRef.current;
     if (!stacksContainer) return null;
 
@@ -301,7 +301,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       // Use StackAreaSprite's built-in drop zone detection
       const dropZone = stackArea.getDropZoneAt(stackLocalPos);
       if (dropZone) {
-        console.log('Drop detected on zone:', dropZone.bodyPart, 'at stack local pos:', stackLocalPos.x, stackLocalPos.y);
+        console.log('Drop detected on zone:', dropZone.bodyPart, 'gameStackId:', dropZone.gameStackId, 'at stack local pos:', stackLocalPos.x, stackLocalPos.y);
         return dropZone;
       }
     }
@@ -324,11 +324,14 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
     // Create stack areas for existing stacks plus one new
     for (let i = 0; i < stackCount; i++) {
       const isNewStack = i >= (playerStacks?.length || 0);
+      const gameStackId = isNewStack ? 'new' : playerStacks![i].id;
       const stackArea = new StackAreaSprite({
         index: i,
         isNewStack: isNewStack,
+        gameStackId: gameStackId,
         spriteSheet: spriteSheetRef.current || undefined
       });
+      stackArea.name = gameStackId; // Use actual game stack ID as name
       stackArea.x = i * 130; // Space stacks horizontally with more room
       stacksContainer.addChild(stackArea);
     }
@@ -382,21 +385,28 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
     
     // Then update each stack with actual card data
     if (playerData.stacks && playerData.stacks.length > 0) {
-      playerData.stacks.forEach((stack: any, index: number) => {
-        updateStackDisplay(index, stack);
+      playerData.stacks.forEach((stack: any) => {
+        updateStackDisplay(stack);
       });
     }
   };
 
   /**
-   * Update a specific stack display (using StackAreaSprite)
+   * Update a specific stack display (using StackAreaSprite) - find by stack ID
    */
-  const updateStackDisplay = (stackIndex: number, stackData: any) => {
+  const updateStackDisplay = (stackData: any) => {
     const stacksContainer = stacksContainerRef.current;
     if (!stacksContainer) return;
 
-    const stackArea = stacksContainer.children[stackIndex] as StackAreaSprite;
-    if (!stackArea || !(stackArea instanceof StackAreaSprite)) return;
+    // Find the canvas stack by game stack ID, not by array index
+    const stackArea = stacksContainer.children.find(
+      child => child.name === stackData.id
+    ) as StackAreaSprite;
+    
+    if (!stackArea || !(stackArea instanceof StackAreaSprite)) {
+      console.warn(`Canvas stack not found for game stack ID: ${stackData.id}`);
+      return;
+    }
 
     // Use StackAreaSprite's built-in update method
     const stackDataFormatted: StackData = {

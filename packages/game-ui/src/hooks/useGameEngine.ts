@@ -139,9 +139,10 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
           // Small delay to make AI moves visible
           setTimeout(() => {
             try {
-              // AI will automatically play when it's their turn
-              // The AIPlayer should handle turn logic internally
-              logger.info('AI turn detected - AI should play automatically');
+              if (aiPlayerRef.current && !gameComplete) {
+                aiPlayerRef.current.takeTurnIfReady();
+                logger.info('AI turn executed automatically');
+              }
             } catch (err) {
               logger.error('AI turn error:', err);
             }

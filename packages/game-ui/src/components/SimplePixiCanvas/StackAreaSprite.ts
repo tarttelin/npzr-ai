@@ -8,6 +8,7 @@ export interface StackAreaOptions {
   partWidth?: number;
   partHeight?: number;
   spriteSheet?: PIXI.Texture;
+  gameStackId?: string; // Actual game stack ID (stack1, stack3, etc.)
 }
 
 export interface StackData {
@@ -184,7 +185,7 @@ export class StackAreaSprite extends PIXI.Container {
   /**
    * Get drop zone information for a local position
    */
-  getDropZoneAt(localPos: PIXI.Point): { bodyPart: string; stackIndex: number; isNewStack: boolean } | null {
+  getDropZoneAt(localPos: PIXI.Point): { bodyPart: string; gameStackId: string; isNewStack: boolean } | null {
     // Check each body part zone
     for (let partIndex = 0; partIndex < this.bodyParts.length; partIndex++) {
       const bodyPart = this.bodyParts[partIndex];
@@ -195,7 +196,7 @@ export class StackAreaSprite extends PIXI.Container {
           localPos.y >= zoneY && localPos.y <= zoneY + this.partHeight) {
         return { 
           bodyPart: bodyPart,
-          stackIndex: this.options.index,
+          gameStackId: this.options.gameStackId || 'new',
           isNewStack: this.options.isNewStack || false
         };
       }
