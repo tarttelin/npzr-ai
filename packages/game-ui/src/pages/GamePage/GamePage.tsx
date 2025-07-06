@@ -148,14 +148,51 @@ export const GamePage: React.FC<GamePageProps> = () => {
       if (currentPlayer && currentPlayer.getName().includes('Human')) {
         const playerState = currentPlayer.getState();
         if (playerState.canPlayCard()) {
-          console.log('Attempting to play card:', data.card.character, data.card.bodyPart);
+          console.log('Attempting to play card:', data.card.character, data.card.bodyPart, 'to', data.targetPile, 'on', data.targetStackId);
           
-          // For now, just try to play the card - we'll improve targeting later
           try {
-            playCard(data.card);
+            // Check if card body part matches target pile (for validation)
+            console.log('Card body part:', data.card.bodyPart, 'Target pile:', data.targetPile);
+            
+            // Convert string body part to enum
+            let targetPile: BodyPart;
+            switch (data.targetPile) {
+              case 'head':
+                targetPile = BodyPart.Head;
+                break;
+              case 'torso':
+                targetPile = BodyPart.Torso;
+                break;
+              case 'legs':
+                targetPile = BodyPart.Legs;
+                break;
+              default:
+                throw new Error(`Invalid body part: ${data.targetPile}`);
+            }
+
+            // Validate that card can go to target pile
+            if (data.card.bodyPart !== 'wild' && data.card.bodyPart !== data.targetPile) {
+              console.warn(`Card body part ${data.card.bodyPart} does not match target pile ${data.targetPile}`);
+              // For now, let the game engine handle the validation
+            }
+
+            if (data.targetStackId === 'new') {
+              // Creating a new stack - play card with target pile
+              console.log('Playing to new stack with options:', { targetPile });
+              playCard(data.card, { targetPile });
+            } else {
+              // Playing to an existing stack
+              const stackId = data.targetStackId!.replace('stack-', ''); // Remove 'stack-' prefix
+              console.log('Playing to existing stack with options:', { targetStackId: stackId, targetPile });
+              playCard(data.card, { 
+                targetStackId: stackId,
+                targetPile 
+              });
+            }
             console.log('Card played successfully');
           } catch (error) {
             console.error('Failed to play card:', error);
+            console.error('Error details:', error);
           }
         } else {
           console.log('Cannot play card in current state:', playerState.getState());

@@ -130,8 +130,8 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
         stacksLabel.y = height - 380;
         app.stage.addChild(stacksLabel);
 
-        // Create initial stack areas (empty drop zones)
-        createStackAreas();
+        // Create initial stack areas (just one "new stack" area initially)
+        createStackAreas([]);
 
         logger.info('✅ Simple PixiJS canvas ready');
         onPixiReady?.(app);
@@ -404,12 +404,12 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
         const dropTarget = findDropTarget(event.global);
         
         if (dropTarget) {
-          console.log('Dropped card on stack:', dropTarget.stackIndex);
+          console.log('Dropped card on stack:', dropTarget.stackIndex, 'body part:', dropTarget.bodyPart, 'new stack:', dropTarget.isNewStack);
           // Emit event to React for game engine integration
           eventBridge.emitToReact('game:cardPlay', { 
             card: stageDragData.card,
-            targetStackId: `stack-${dropTarget.stackIndex}`,
-            targetPile: 'head' // For now, assume head pile
+            targetStackId: dropTarget.isNewStack ? 'new' : `stack-${dropTarget.stackIndex}`,
+            targetPile: dropTarget.bodyPart
           });
           
           // Reset card position for now (React will handle the actual move)
@@ -429,21 +429,44 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
   };
 
   /**
-   * Find the drop target (stack area) under the pointer
+   * Find the drop target (stack area and body part) under the pointer
    */
-  const findDropTarget = (globalPos: PIXI.Point): { stackIndex: number } | null => {
+  const findDropTarget = (globalPos: PIXI.Point): { stackIndex: number; bodyPart: string; isNewStack: boolean } | null => {
     const stacksContainer = stacksContainerRef.current;
     if (!stacksContainer) return null;
 
     // Check each stack area
     for (let i = 0; i < stacksContainer.children.length; i++) {
       const stackArea = stacksContainer.children[i] as PIXI.Container;
-      const localPos = stackArea.toLocal(globalPos);
+      const stackLocalPos = stackArea.toLocal(globalPos);
       
-      // Check if point is within stack bounds
-      if (localPos.x >= 0 && localPos.x <= 100 && 
-          localPos.y >= 0 && localPos.y <= 140) {
-        return { stackIndex: i };
+      // Check each body part zone within this stack
+      for (const child of stackArea.children) {
+        if (child.name?.endsWith('-zone')) {
+          const zone = child as PIXI.Graphics;
+          const stackLocalPos = stackArea.toLocal(globalPos);
+          
+          // Get zone dimensions from creation (110w x 45h per zone)
+          const partWidth = 110;
+          const partHeight = 45;
+          const bodyPart = (zone as any).bodyPart;
+          
+          // Calculate zone position based on body part
+          let zoneY = 0;
+          if (bodyPart === 'torso') zoneY = partHeight + 2;
+          if (bodyPart === 'legs') zoneY = 2 * (partHeight + 2);
+          
+          // Check if point is within this body part zone
+          if (stackLocalPos.x >= 0 && stackLocalPos.x <= partWidth && 
+              stackLocalPos.y >= zoneY && stackLocalPos.y <= zoneY + partHeight) {
+            console.log('Drop detected on zone:', bodyPart, 'at stack local pos:', stackLocalPos.x, stackLocalPos.y, 'zone Y range:', zoneY, 'to', zoneY + partHeight);
+            return { 
+              stackIndex: (zone as any).stackIndex,
+              bodyPart: bodyPart,
+              isNewStack: (zone as any).isNewStack
+            };
+          }
+        }
       }
     }
     
@@ -451,54 +474,92 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
   };
 
   /**
-   * Create stack areas for card play
+   * Create stack areas for card play - dynamic based on player stacks
    */
-  const createStackAreas = () => {
+  const createStackAreas = (playerStacks?: any[]) => {
     const stacksContainer = stacksContainerRef.current;
     if (!stacksContainer || !appRef.current) return;
 
     // Clear existing stack areas
     stacksContainer.removeChildren();
 
-    // Create 4 initial stack areas (expandable as needed)
-    for (let i = 0; i < 4; i++) {
-      const stackArea = createStackArea(i);
-      stackArea.x = i * 120; // Space stacks horizontally
+    const stackCount = (playerStacks?.length || 0) + 1; // Existing stacks + 1 new
+    
+    // Create stack areas for existing stacks plus one new
+    for (let i = 0; i < stackCount; i++) {
+      const isNewStack = i >= (playerStacks?.length || 0);
+      const stackArea = createStackArea(i, isNewStack);
+      stackArea.x = i * 130; // Space stacks horizontally with more room
       stacksContainer.addChild(stackArea);
     }
   };
 
   /**
-   * Create a single stack area (drop zone)
+   * Create a single stack area (drop zone) with body part targeting
    */
-  const createStackArea = (index: number): PIXI.Container => {
+  const createStackArea = (index: number, isNewStack: boolean = false): PIXI.Container => {
     const stackContainer = new PIXI.Container();
     
-    // Create drop zone background
-    const dropZone = new PIXI.Graphics();
-    dropZone
-      .rect(0, 0, 100, 140)
-      .fill(0x444444, 0.3)
-      .stroke({ width: 2, color: 0x666666, style: 'dashed' as any });
+    // Create drop zones for each body part (head, torso, legs)
+    const bodyParts = ['head', 'torso', 'legs'];
+    const partHeight = 45;
+    const partWidth = 110;
     
-    // Don't make drop zones interactive - they're just visual indicators
-    // The drag system will detect drops using coordinate checking
+    bodyParts.forEach((bodyPart, partIndex) => {
+      const dropZone = new PIXI.Graphics();
+      const yPos = partIndex * (partHeight + 2);
+      
+      // Different styling for new stack vs existing stack
+      if (isNewStack) {
+        dropZone
+          .rect(0, yPos, partWidth, partHeight)
+          .fill(0x444444, 0.2)
+          .stroke({ width: 1, color: 0x888888, style: 'dashed' as any });
+      } else {
+        dropZone
+          .rect(0, yPos, partWidth, partHeight)
+          .fill(0x333333, 0.3)
+          .stroke({ width: 2, color: 0x666666 });
+      }
+      
+      // Add body part label
+      const partLabel = new PIXI.Text({
+        text: bodyPart.charAt(0).toUpperCase() + bodyPart.slice(1),
+        style: {
+          fontFamily: 'Arial',
+          fontSize: 10,
+          fill: 0xCCCCCC,
+          align: 'center'
+        }
+      });
+      partLabel.x = 5;
+      partLabel.y = yPos + 2;
+      
+      // Store metadata for drop detection
+      dropZone.name = `${bodyPart}-zone`;
+      (dropZone as any).stackIndex = index;
+      (dropZone as any).bodyPart = bodyPart;
+      (dropZone as any).isNewStack = isNewStack;
+      
+      stackContainer.addChild(dropZone);
+      stackContainer.addChild(partLabel);
+    });
     
-    // Add drop zone label
-    const label = new PIXI.Text({
-      text: `Stack ${index + 1}`,
+    // Add stack label
+    const stackLabel = new PIXI.Text({
+      text: isNewStack ? 'New Stack' : `Stack ${index + 1}`,
       style: {
         fontFamily: 'Arial',
         fontSize: 12,
-        fill: 0xCCCCCC,
-        align: 'center'
+        fill: isNewStack ? 0x999999 : 0xFFFFFF,
+        align: 'center',
+        fontWeight: 'bold'
       }
     });
-    label.x = (100 - label.width) / 2;
-    label.y = 5;
+    stackLabel.x = (partWidth - stackLabel.width) / 2;
+    stackLabel.y = -18;
     
-    stackContainer.addChild(dropZone);
-    stackContainer.addChild(label);
+    stackContainer.addChild(stackLabel);
     stackContainer.name = `stack-${index}`;
     
     return stackContainer;
@@ -552,9 +613,10 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       stackDataCount: playerData.stacks?.length || 0
     });
 
-    // Clear existing stack displays but keep the drop zones
-    // We'll overlay the actual stacks on top of the drop zones
+    // Recreate stack areas based on current player stacks
+    createStackAreas(playerData.stacks || []);
     
+    // Then update each stack with actual card data
     if (playerData.stacks && playerData.stacks.length > 0) {
       playerData.stacks.forEach((stack: any, index: number) => {
         updateStackDisplay(index, stack);
@@ -576,29 +638,33 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
     const cardsToRemove = stackArea.children.filter(child => child.name?.startsWith('stack-card'));
     cardsToRemove.forEach(card => stackArea.removeChild(card));
 
-    // Add cards from the stack data
-    let cardYOffset = 30; // Start below the label
-
+    // Position cards in their respective body part zones
+    const partHeight = 45;
+    
+    // Head card in head zone (top) - centered in zone
     if (stackData.headCard) {
       const headCard = createStackCard(stackData.headCard, 0);
       headCard.name = 'stack-card-head';
-      headCard.y = cardYOffset;
+      headCard.x = 5; // Center: (110 - 100) / 2 = 5
+      headCard.y = 2.5; // Center: (45 - 40) / 2 = 2.5
       stackArea.addChild(headCard);
-      cardYOffset += 25; // Overlap cards slightly
     }
 
+    // Torso card in torso zone (middle) - centered in zone
     if (stackData.torsoCard) {
       const torsoCard = createStackCard(stackData.torsoCard, 1);
       torsoCard.name = 'stack-card-torso';
-      torsoCard.y = cardYOffset;
+      torsoCard.x = 5;
+      torsoCard.y = (partHeight + 2) + 2.5; // Zone start + centering offset
       stackArea.addChild(torsoCard);
-      cardYOffset += 25;
     }
 
+    // Legs card in legs zone (bottom) - centered in zone
     if (stackData.legsCard) {
       const legsCard = createStackCard(stackData.legsCard, 2);
       legsCard.name = 'stack-card-legs';
-      legsCard.y = cardYOffset;
+      legsCard.x = 5;
+      legsCard.y = 2 * (partHeight + 2) + 2.5; // Zone start + centering offset
       stackArea.addChild(legsCard);
     }
 
@@ -606,7 +672,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
     if (stackData.isComplete) {
       const highlight = new PIXI.Graphics();
       highlight
-        .rect(-5, -5, 110, 150)
+        .rect(-2, -2, 114, 3 * (partHeight + 2) + 4)
         .stroke({ width: 3, color: 0x00FF00, alpha: 0.8 });
       highlight.name = 'stack-complete-highlight';
       stackArea.addChild(highlight);
@@ -619,9 +685,9 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
   const createStackCard = (card: any, index: number): PIXI.Container => {
     const cardContainer = new PIXI.Container();
     
-    // Use smaller dimensions for stack cards
-    const cardWidth = 70;
-    const cardHeight = cardWidth / (280/190); // Maintain aspect ratio
+    // Use dimensions that better fill the zones (110w x 45h)
+    const cardWidth = 100; // Leave 10px margin (5px each side)
+    const cardHeight = 40;  // Leave 5px margin (2.5px top/bottom)
     
     // Try to use sprite sheet first
     const coords = getSpriteCoordinates(card.character || '', card.bodyPart || '');
@@ -667,14 +733,15 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       
       cardContainer.addChild(cardBg);
       
-      // Add small text
+      // Add text that fits the larger card
       const text = new PIXI.Text({
         text: `${card.character || 'W'}\n${card.bodyPart || 'C'}`,
         style: {
           fontFamily: 'Arial',
-          fontSize: 8,
+          fontSize: 12,
           fill: 0x000000,
-          align: 'center'
+          align: 'center',
+          fontWeight: 'bold'
         }
       });
       text.x = (cardWidth - text.width) / 2;
