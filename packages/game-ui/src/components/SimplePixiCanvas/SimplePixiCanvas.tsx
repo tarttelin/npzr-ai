@@ -29,6 +29,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
   const aiHandContainerRef = useRef<HandContainerSprite | null>(null);
   const stacksContainerRef = useRef<PIXI.Container | null>(null);
   const spriteSheetRef = useRef<PIXI.Texture | null>(null);
+  const previousStacksRef = useRef<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -178,6 +179,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
         });
       }
     };
+
 
     // Setup event listeners before initializing
     eventBridge.onReactEvent('pixi:updateGameState', handleGameStateUpdate);
@@ -463,15 +465,60 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       stackDataCount: playerData.stacks?.length || 0
     });
 
-    // Recreate stack areas based on current player stacks
-    createStackAreas(playerData.stacks || []);
+    const currentStacks = playerData.stacks || [];
+    const previousStacks = previousStacksRef.current;
     
-    // Then update each stack with actual card data
-    if (playerData.stacks && playerData.stacks.length > 0) {
-      playerData.stacks.forEach((stack: any) => {
+    // Detect completed stacks by finding which stacks were removed
+    if (previousStacks.length > 0) {
+      const currentStackIds = new Set(currentStacks.map((s: any) => s.id));
+      const removedStacks = previousStacks.filter(prevStack => !currentStackIds.has(prevStack.id));
+      
+      if (removedStacks.length > 0) {
+        console.log('🎉 Detected completed stacks (removed from game state):', removedStacks.map(s => s.id));
+        
+        // Trigger celebrations for removed stacks BEFORE recreating the display
+        removedStacks.forEach(removedStack => {
+          const stackArea = stacksContainer.children.find(
+            child => child.name === removedStack.id
+          ) as StackAreaSprite;
+          
+          if (stackArea && stackArea instanceof StackAreaSprite) {
+            console.log('🎉 Starting celebration for completed stack:', removedStack.id);
+            stackArea.showCompletionCelebration(() => {
+              console.log('Celebration finished for completed stack:', removedStack.id);
+            });
+          } else {
+            console.warn('Stack not found for celebration:', removedStack.id);
+          }
+        });
+        
+        // Delay the stack recreation to allow celebrations to show
+        setTimeout(() => {
+          // Recreate stack areas based on current player stacks (after celebration)
+          createStackAreas(currentStacks);
+          
+          // Then update each remaining stack with actual card data
+          currentStacks.forEach((stack: any) => {
+            updateStackDisplay(stack);
+          });
+        }, 2000); // 2 second delay to show celebration
+      } else {
+        // No completed stacks, normal update
+        createStackAreas(currentStacks);
+        currentStacks.forEach((stack: any) => {
+          updateStackDisplay(stack);
+        });
+      }
+    } else {
+      // First time or no previous stacks, normal update
+      createStackAreas(currentStacks);
+      currentStacks.forEach((stack: any) => {
         updateStackDisplay(stack);
       });
     }
+
+    // Update the previous stacks reference for next comparison
+    previousStacksRef.current = [...currentStacks];
   };
 
   /**
@@ -491,7 +538,7 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       return;
     }
 
-    // Use StackAreaSprite's built-in update method
+    // Normal update - completion detection is now handled at the higher level
     const stackDataFormatted: StackData = {
       id: stackData.id,
       headCard: stackData.headCard,

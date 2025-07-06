@@ -304,6 +304,123 @@ export class StackAreaSprite extends PIXI.Container {
   }
 
   /**
+   * Trigger a completion celebration animation before stack removal
+   */
+  showCompletionCelebration(onComplete?: () => void): void {
+    console.log('🎉 showCompletionCelebration called for stack:', this.options.gameStackId);
+    
+    // Force show completion highlights
+    this.showCompletionHighlights();
+    
+    // Add pulsing animation to the highlights
+    const highlight = this.children.find(child => child.name === 'stack-complete-highlight') as PIXI.Graphics;
+    const glow = this.children.find(child => child.name === 'stack-complete-glow') as PIXI.Graphics;
+    const badge = this.children.find(child => child.name === 'stack-complete-badge') as PIXI.Text;
+    
+    if (highlight && glow && badge) {
+      // Create a pulsing effect
+      let scale = 1;
+      let growing = true;
+      let pulseCount = 0;
+      const maxPulses = 3;
+      const pulseSpeed = 0.03; // Slower pulse speed for more satisfying animation
+      
+      const animate = () => {
+        if (growing) {
+          scale += pulseSpeed;
+          if (scale >= 1.2) {
+            growing = false;
+            pulseCount++;
+          }
+        } else {
+          scale -= pulseSpeed;
+          if (scale <= 1) {
+            growing = true;
+          }
+        }
+        
+        // Apply scale to highlights
+        highlight.scale.set(scale);
+        glow.scale.set(scale);
+        badge.scale.set(scale);
+        
+        // Continue animation for specified number of pulses
+        if (pulseCount < maxPulses) {
+          requestAnimationFrame(animate);
+        } else {
+          // Reset scale and call completion callback
+          highlight.scale.set(1);
+          glow.scale.set(1);
+          badge.scale.set(1);
+          
+          // Wait a moment then trigger completion
+          setTimeout(() => {
+            onComplete?.();
+          }, 500);
+        }
+      };
+      
+      // Start the animation
+      requestAnimationFrame(animate);
+    } else {
+      // If no highlights found, just delay briefly and complete
+      setTimeout(() => {
+        onComplete?.();
+      }, 1000);
+    }
+  }
+
+  /**
+   * Force show completion highlights (extracted from updateStack)
+   */
+  private showCompletionHighlights(): void {
+    // Clear any existing completion elements first
+    const elementsToRemove = this.children.filter(child => 
+      child.name?.startsWith('stack-complete-highlight') ||
+      child.name?.startsWith('stack-complete-glow') ||
+      child.name?.startsWith('stack-complete-badge')
+    );
+    elementsToRemove.forEach(element => this.removeChild(element));
+
+    // Add completion highlights
+    const highlight = new PIXI.Graphics();
+    highlight
+      .roundRect(-4, -4, this.partWidth + 8, 3 * (this.partHeight + 2) + 8, 8)
+      .stroke({ width: 4, color: 0xFFD700 }); // Gold highlight
+    
+    // Add inner glow effect
+    const innerGlow = new PIXI.Graphics();
+    innerGlow
+      .roundRect(-2, -2, this.partWidth + 4, 3 * (this.partHeight + 2) + 4, 6)
+      .stroke({ width: 2, color: 0xFFD700, alpha: 0.6 });
+    
+    highlight.name = 'stack-complete-highlight';
+    innerGlow.name = 'stack-complete-glow';
+    this.addChild(highlight);
+    this.addChild(innerGlow);
+    
+    // Add completion badge
+    const completeBadge = new PIXI.Text({
+      text: '🎉 COMPLETE! 🎉',
+      style: {
+        fontFamily: 'Arial',
+        fontSize: 12,
+        fill: 0xFFD700,
+        align: 'center',
+        fontWeight: 'bold',
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowAlpha: 0.8,
+        dropShadowDistance: 1
+      }
+    });
+    completeBadge.x = (this.partWidth - completeBadge.width) / 2;
+    completeBadge.y = 3 * (this.partHeight + 2) + 6;
+    completeBadge.name = 'stack-complete-badge';
+    this.addChild(completeBadge);
+  }
+
+  /**
    * Get themed color for body part zones
    */
   private getBodyPartColor(bodyPart: string): number {
