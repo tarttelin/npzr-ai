@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useEffect, useState } from 'react';
 import { Player, PlayerStateType, Card, Character, Stack } from '@npzr/core';
+import { logger } from '@npzr/logging';
 import { CharacterType } from '../types/GameUI.types';
 
 export interface PlayerStateInfo {
@@ -94,7 +95,7 @@ export function usePlayerState(
         canNominate: playerState.canNominate()
       };
     } catch (err) {
-      console.error('Error transforming player state:', err);
+      logger.error('Error transforming player state:', err);
       setError(err instanceof Error ? err.message : 'Player state transformation failed');
       return null;
     }
@@ -145,13 +146,14 @@ export function usePlayerState(
     try {
       setError(null);
       currentPlayer.drawCard();
+      logger.info(`Card drawn by ${currentPlayer.getName()}`);
       
       // Force UI update after state change
       setForceUpdate(prev => prev + 1);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to draw card';
       setError(errorMessage);
-      console.error('Draw card error:', err);
+      logger.error('Draw card error:', err);
     }
   }, [currentPlayer]);
 
@@ -173,7 +175,7 @@ export function usePlayerState(
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to play card';
       setError(errorMessage);
-      console.error('Play card error:', err);
+      logger.error('Play card error:', err);
     }
   }, [currentPlayer]);
 
@@ -201,7 +203,7 @@ export function usePlayerState(
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to move card';
       setError(errorMessage);
-      console.error('Move card error:', err);
+      logger.error('Move card error:', err);
     }
   }, [currentPlayer]);
 
@@ -223,7 +225,7 @@ export function usePlayerState(
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to nominate wild card';
       setError(errorMessage);
-      console.error('Nominate wild card error:', err);
+      logger.error('Nominate wild card error:', err);
     }
   }, [currentPlayer]);
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameEngine, Player } from '@npzr/core';
 import { AIPlayer } from '@npzr/ai';
+import { logger } from '@npzr/logging';
 
 export interface UseGameEngineOptions {
   enableAI?: boolean;
@@ -71,13 +72,15 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
       setCurrentPlayer(humanPlayer);
       setIsGameComplete(false);
       setWinner(null);
+      
+      logger.info(`New NPZR game created: ${playerName} vs ${aiName} (AI difficulty: ${aiDifficulty})`);
       setIsInitialized(true);
       
       return engine;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to initialize game engine';
       setError(errorMessage);
-      console.error('Game engine initialization error:', err);
+      logger.error('Game engine initialization error:', err);
       return null;
     }
   }, [enableAI, aiDifficulty, playerName, aiName]);
@@ -118,9 +121,11 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
         return;
       }
 
-      // Determine current player based on player states
+      // Get current players (the existing references should be updated by the engine)
       const humanPlayer = players[0];
       const aiPlayer = players[1];
+      
+      // Don't force array updates here - let the natural game state changes trigger updates
       
       let current: Player | null = null;
       
@@ -134,11 +139,12 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
           // Small delay to make AI moves visible
           setTimeout(() => {
             try {
-              // AI will automatically play when it's their turn
-              // The AIPlayer should handle turn logic internally
-              console.log('AI turn detected - AI should play automatically');
+              if (aiPlayerRef.current && !gameComplete) {
+                aiPlayerRef.current.takeTurnIfReady();
+                logger.info('AI turn executed automatically');
+              }
             } catch (err) {
-              console.error('AI turn error:', err);
+              logger.error('AI turn error:', err);
             }
           }, 1000);
         }
@@ -146,7 +152,7 @@ export function useGameEngine(options: UseGameEngineOptions = {}): UseGameEngine
       
       setCurrentPlayer(current);
     } catch (err) {
-      console.error('Game state update error:', err);
+      logger.error('Game state update error:', err);
       setError(err instanceof Error ? err.message : 'Game state update failed');
     }
   }, [gameEngine, players]);

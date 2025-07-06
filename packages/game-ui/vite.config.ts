@@ -15,7 +15,19 @@ export default defineConfig({
       include: [/node_modules/, /packages/]
     },
     rollupOptions: {
-      external: ['winston']
+      external: ['winston'],
+      output: {
+        manualChunks: {
+          pixi: ['pixi.js']
+        }
+      },
+      onwarn(warning, warn) {
+        // Suppress warnings about missing exports from PixiJS
+        if (warning.code === 'MISSING_EXPORT' && warning.source?.includes('pixi.js')) {
+          return;
+        }
+        warn(warning);
+      }
     }
   },
   define: {
@@ -26,10 +38,13 @@ export default defineConfig({
     alias: {
       util: 'util',
       os: 'os-browserify/browser',
-      process: 'process/browser'
+      process: 'process/browser',
+      // Fix for PixiJS v8 missing globalHooks
+      './utils/globalThis/globalHooks.mjs': 'data:text/javascript,export default {};',
+      './globalThis/globalHooks.mjs': 'data:text/javascript,export default {};'
     }
   },
   optimizeDeps: {
-    include: ['@npzr/core', '@npzr/ai', '@npzr/logging', '@npzr/ui-react']
+    include: ['@npzr/core', '@npzr/ai', '@npzr/logging', '@npzr/ui-react', 'pixi.js']
   }
 });
