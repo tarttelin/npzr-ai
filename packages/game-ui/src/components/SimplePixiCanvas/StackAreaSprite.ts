@@ -9,6 +9,7 @@ export interface StackAreaOptions {
   partHeight?: number;
   spriteSheet?: PIXI.Texture;
   gameStackId?: string; // Actual game stack ID (stack1, stack3, etc.)
+  makeCardsDraggable?: boolean; // Enable dragging cards from this stack
 }
 
 export interface StackData {
@@ -19,6 +20,13 @@ export interface StackData {
   isComplete: boolean;
 }
 
+export interface StackCardDragInfo {
+  card: Card;
+  sourceStackId: string;
+  sourceBodyPart: string;
+  cardContainer: PIXI.Container;
+}
+
 /**
  * Reusable stack area sprite for displaying drop zones and stack cards
  */
@@ -27,6 +35,7 @@ export class StackAreaSprite extends PIXI.Container {
   private readonly partWidth: number;
   private readonly partHeight: number;
   private readonly bodyParts = ['head', 'torso', 'legs'];
+  private cardDragHandler?: (dragInfo: StackCardDragInfo) => void;
 
   constructor(options: StackAreaOptions) {
     super();
@@ -51,6 +60,13 @@ export class StackAreaSprite extends PIXI.Container {
    */
   isNewStack(): boolean {
     return this.options.isNewStack || false;
+  }
+
+  /**
+   * Set up the card dragging handler for stack cards
+   */
+  setCardDragHandler(handler: (dragInfo: StackCardDragInfo) => void): void {
+    this.cardDragHandler = handler;
   }
 
   /**
@@ -157,11 +173,22 @@ export class StackAreaSprite extends PIXI.Container {
       const headCard = new CardSprite(stackData.headCard, {
         size: 'small',
         spriteSheet: this.options.spriteSheet,
-        makeInteractive: false
+        makeInteractive: this.options.makeCardsDraggable || false
       });
       headCard.name = 'stack-card-head';
       headCard.x = 15; // Center: (110 - 80) / 2 = 15
       headCard.y = 3; // Center: (60 - 54) / 2 = 3
+      
+      // Apply drag handler if provided and dragging is enabled
+      if (this.cardDragHandler && this.options.makeCardsDraggable && this.options.gameStackId) {
+        this.cardDragHandler({
+          card: stackData.headCard,
+          sourceStackId: this.options.gameStackId,
+          sourceBodyPart: 'head',
+          cardContainer: headCard
+        });
+      }
+      
       this.addChild(headCard);
     }
 
@@ -170,11 +197,22 @@ export class StackAreaSprite extends PIXI.Container {
       const torsoCard = new CardSprite(stackData.torsoCard, {
         size: 'small',
         spriteSheet: this.options.spriteSheet,
-        makeInteractive: false
+        makeInteractive: this.options.makeCardsDraggable || false
       });
       torsoCard.name = 'stack-card-torso';
       torsoCard.x = 15;
       torsoCard.y = (this.partHeight + 2) + 3; // Zone start + centering offset
+      
+      // Apply drag handler if provided and dragging is enabled
+      if (this.cardDragHandler && this.options.makeCardsDraggable && this.options.gameStackId) {
+        this.cardDragHandler({
+          card: stackData.torsoCard,
+          sourceStackId: this.options.gameStackId,
+          sourceBodyPart: 'torso',
+          cardContainer: torsoCard
+        });
+      }
+      
       this.addChild(torsoCard);
     }
 
@@ -183,11 +221,22 @@ export class StackAreaSprite extends PIXI.Container {
       const legsCard = new CardSprite(stackData.legsCard, {
         size: 'small',
         spriteSheet: this.options.spriteSheet,
-        makeInteractive: false
+        makeInteractive: this.options.makeCardsDraggable || false
       });
       legsCard.name = 'stack-card-legs';
       legsCard.x = 15;
       legsCard.y = 2 * (this.partHeight + 2) + 3; // Zone start + centering offset
+      
+      // Apply drag handler if provided and dragging is enabled
+      if (this.cardDragHandler && this.options.makeCardsDraggable && this.options.gameStackId) {
+        this.cardDragHandler({
+          card: stackData.legsCard,
+          sourceStackId: this.options.gameStackId,
+          sourceBodyPart: 'legs',
+          cardContainer: legsCard
+        });
+      }
+      
       this.addChild(legsCard);
     }
 

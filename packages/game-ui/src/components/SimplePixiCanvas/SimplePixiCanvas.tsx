@@ -3,7 +3,7 @@ import * as PIXI from 'pixi.js';
 import { EventBridge } from '../../bridge/EventBridge';
 import { logger } from '@npzr/logging';
 import { Card } from '@npzr/core';
-import { StackAreaSprite, StackData } from './StackAreaSprite';
+import { StackAreaSprite, StackData, StackCardDragInfo } from './StackAreaSprite';
 import { DeckSprite } from './DeckSprite';
 import { HandContainerSprite, PlayerHandData } from './HandContainerSprite';
 
@@ -245,45 +245,121 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
       appRef.current!.stage.eventMode = 'static';
       
       appRef.current!.stage.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
-        const stageDragData = (appRef.current!.stage as any).dragData;
-        if (!stageDragData?.dragging) return;
+        const handDragData = (appRef.current!.stage as any).dragData;
+        const stackDragData = (appRef.current!.stage as any).stackDragData;
+        const activeDragData = handDragData?.dragging ? handDragData : stackDragData?.dragging ? stackDragData : null;
+        
+        if (!activeDragData?.dragging) return;
         
         const globalPos = event.global;
-        const localPos = stageDragData.cardContainer.parent.toLocal(globalPos);
+        const localPos = activeDragData.cardContainer.parent.toLocal(globalPos);
         
-        stageDragData.cardContainer.x = localPos.x - stageDragData.offsetX;
-        stageDragData.cardContainer.y = localPos.y - stageDragData.offsetY;
+        activeDragData.cardContainer.x = localPos.x - activeDragData.offsetX;
+        activeDragData.cardContainer.y = localPos.y - activeDragData.offsetY;
       });
 
       appRef.current!.stage.on('pointerup', (event: PIXI.FederatedPointerEvent) => {
-        const stageDragData = (appRef.current!.stage as any).dragData;
-        if (!stageDragData?.dragging) return;
+        const handDragData = (appRef.current!.stage as any).dragData;
+        const stackDragData = (appRef.current!.stage as any).stackDragData;
+        const activeDragData = handDragData?.dragging ? handDragData : stackDragData?.dragging ? stackDragData : null;
+        
+        if (!activeDragData?.dragging) return;
         
         const dropTarget = findDropTarget(event.global);
+        const isStackToStack = !!activeDragData.sourceStackId; // Stack cards have sourceStackId
         
         if (dropTarget) {
-          console.log('Dropped card on stack:', dropTarget.gameStackId, 'body part:', dropTarget.bodyPart, 'new stack:', dropTarget.isNewStack);
-          // Emit event to React for game engine integration
-          eventBridge.emitToReact('game:cardPlay', { 
-            card: stageDragData.card,
-            targetStackId: dropTarget.gameStackId,
-            targetPile: dropTarget.bodyPart
-          });
+          if (isStackToStack) {
+            // Stack-to-stack move - emit cardMove event
+            console.log('Moving card from stack:', activeDragData.sourceStackId, activeDragData.sourceBodyPart, 'to stack:', dropTarget.gameStackId, dropTarget.bodyPart);
+            eventBridge.emitToReact('game:cardMove', {
+              card: activeDragData.card,
+              sourceStackId: activeDragData.sourceStackId,
+              sourceBodyPart: activeDragData.sourceBodyPart,
+              targetStackId: dropTarget.gameStackId,
+              targetPile: dropTarget.bodyPart
+            });
+          } else {
+            // Hand-to-stack play - emit cardPlay event
+            console.log('Playing card from hand to stack:', dropTarget.gameStackId, 'body part:', dropTarget.bodyPart, 'new stack:', dropTarget.isNewStack);
+            eventBridge.emitToReact('game:cardPlay', { 
+              card: activeDragData.card,
+              targetStackId: dropTarget.gameStackId,
+              targetPile: dropTarget.bodyPart
+            });
+          }
           
           // Reset card position for now (React will handle the actual move)
-          stageDragData.cardContainer.x = stageDragData.originalX;
-          stageDragData.cardContainer.y = stageDragData.originalY;
+          activeDragData.cardContainer.x = activeDragData.originalX;
+          activeDragData.cardContainer.y = activeDragData.originalY;
         } else {
           // Return to original position
-          stageDragData.cardContainer.x = stageDragData.originalX;
-          stageDragData.cardContainer.y = stageDragData.originalY;
-          console.log('Card dropped outside valid area, returning to hand');
+          activeDragData.cardContainer.x = activeDragData.originalX;
+          activeDragData.cardContainer.y = activeDragData.originalY;
+          console.log('Card dropped outside valid area, returning to original position');
         }
         
-        // Clear drag data
-        (appRef.current!.stage as any).dragData = null;
+        // Clear appropriate drag data
+        if (isStackToStack) {
+          (appRef.current!.stage as any).stackDragData = null;
+        } else {
+          (appRef.current!.stage as any).dragData = null;
+        }
       });
     }
+  };
+
+  /**
+   * Make a stack card draggable with drop zone detection for stack-to-stack moves
+   */
+  const makeStackCardDraggable = (dragInfo: StackCardDragInfo) => {
+    const { card, sourceStackId, sourceBodyPart, cardContainer } = dragInfo;
+    
+    cardContainer.eventMode = 'static';
+    cardContainer.cursor = 'pointer';
+    
+    let dragData: { 
+      dragging: boolean; 
+      originalX: number; 
+      originalY: number; 
+      offsetX: number; 
+      offsetY: number; 
+      card: Card;
+      cardContainer: PIXI.Container;
+      sourceStackId: string;
+      sourceBodyPart: string;
+    } | null = null;
+
+    cardContainer.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+      const globalPos = event.global;
+      const localPos = cardContainer.parent.toLocal(globalPos);
+      
+      dragData = {
+        dragging: true,
+        originalX: cardContainer.x,
+        originalY: cardContainer.y,
+        offsetX: localPos.x - cardContainer.x,
+        offsetY: localPos.y - cardContainer.y,
+        card: card,
+        cardContainer: cardContainer,
+        sourceStackId: sourceStackId,
+        sourceBodyPart: sourceBodyPart
+      };
+      
+      // Store drag data globally so stage can handle it
+      (appRef.current!.stage as any).stackDragData = dragData;
+      
+      // Bring card to front
+      cardContainer.parent.setChildIndex(cardContainer, cardContainer.parent.children.length - 1);
+      
+      console.log('Started dragging stack card:', card.character, card.bodyPart, 'from', sourceStackId, sourceBodyPart);
+      
+      // Stop event propagation
+      event.stopPropagation();
+    });
+
+    // The stack card drag handling will be managed by the existing stage-level handlers
+    // but we need to distinguish between hand drags and stack drags in the pointerup handler
   };
 
   /**
@@ -329,10 +405,17 @@ export const SimplePixiCanvas: React.FC<SimplePixiCanvasProps> = ({
         index: i,
         isNewStack: isNewStack,
         gameStackId: gameStackId,
-        spriteSheet: spriteSheetRef.current || undefined
+        spriteSheet: spriteSheetRef.current || undefined,
+        makeCardsDraggable: !isNewStack // Enable dragging on existing stacks only
       });
       stackArea.name = gameStackId; // Use actual game stack ID as name
       stackArea.x = i * 130; // Space stacks horizontally with more room
+      
+      // Set up stack card drag handler for existing stacks
+      if (!isNewStack) {
+        stackArea.setCardDragHandler(makeStackCardDraggable);
+      }
+      
       stacksContainer.addChild(stackArea);
     }
   };

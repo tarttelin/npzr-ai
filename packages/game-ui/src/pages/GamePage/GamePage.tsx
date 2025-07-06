@@ -48,7 +48,7 @@ export const GamePage: React.FC<GamePageProps> = () => {
     winner: winnerState,
     drawCard,
     playCard,
-    // moveCard, // Not currently used
+    moveCard,
     nominateWild,
     error: playerError
   } = usePlayerState(players, currentPlayer, isGameComplete, winner);
@@ -199,6 +199,80 @@ export const GamePage: React.FC<GamePageProps> = () => {
       }
     };
 
+    const handleCardMove = (data: { card: any; sourceStackId: string; sourceBodyPart: string; targetStackId: string; targetPile: string }) => {
+      console.log('Card move event received:', data);
+      
+      if (currentPlayer && currentPlayer.getName().includes('Human')) {
+        const playerState = currentPlayer.getState();
+        if (playerState.canPlayCard() || playerState.getState() === 'move_card') { // Allow moves when in move_card state
+          console.log('Attempting to move card:', data.card.character, data.card.bodyPart, 'from', data.sourceStackId, data.sourceBodyPart, 'to', data.targetStackId, data.targetPile);
+          
+          try {
+            // Convert string body parts to enums
+            let sourceBodyPart: BodyPart;
+            let targetPile: BodyPart;
+            
+            // Convert source body part
+            switch (data.sourceBodyPart) {
+              case 'head':
+                sourceBodyPart = BodyPart.Head;
+                break;
+              case 'torso':
+                sourceBodyPart = BodyPart.Torso;
+                break;
+              case 'legs':
+                sourceBodyPart = BodyPart.Legs;
+                break;
+              default:
+                throw new Error(`Invalid source body part: ${data.sourceBodyPart}`);
+            }
+            
+            // Convert target pile
+            switch (data.targetPile) {
+              case 'head':
+                targetPile = BodyPart.Head;
+                break;
+              case 'torso':
+                targetPile = BodyPart.Torso;
+                break;
+              case 'legs':
+                targetPile = BodyPart.Legs;
+                break;
+              default:
+                throw new Error(`Invalid target body part: ${data.targetPile}`);
+            }
+
+            if (data.targetStackId === 'new') {
+              // Moving to a new stack
+              console.log('Moving to new stack with options:', { cardId: data.card.id, fromStackId: data.sourceStackId, fromPile: sourceBodyPart, toPile: targetPile });
+              moveCard({
+                cardId: data.card.id,
+                fromStackId: data.sourceStackId,
+                fromPile: sourceBodyPart,
+                toPile: targetPile
+              });
+            } else {
+              // Moving to an existing stack
+              console.log('Moving to existing stack with options:', { cardId: data.card.id, fromStackId: data.sourceStackId, fromPile: sourceBodyPart, toStackId: data.targetStackId, toPile: targetPile });
+              moveCard({
+                cardId: data.card.id,
+                fromStackId: data.sourceStackId,
+                fromPile: sourceBodyPart,
+                toStackId: data.targetStackId,
+                toPile: targetPile
+              });
+            }
+            console.log('Card moved successfully');
+          } catch (error) {
+            console.error('Failed to move card:', error);
+            console.error('Error details:', error);
+          }
+        } else {
+          console.log('Cannot move card in current state:', playerState.getState());
+        }
+      }
+    };
+
     const handlePixiReady = () => {
       console.log('PixiJS is ready, sending initial game state');
       if (gameStateData) {
@@ -209,14 +283,16 @@ export const GamePage: React.FC<GamePageProps> = () => {
 
     eventBridge.onCanvasEvent('game:deckClick', handleDeckClick);
     eventBridge.onCanvasEvent('game:cardPlay', handleCardPlay);
+    eventBridge.onCanvasEvent('game:cardMove', handleCardMove);
     eventBridge.onCanvasEvent('pixi:ready', handlePixiReady);
 
     return () => {
       eventBridge.offCanvasEvent('game:deckClick', handleDeckClick);
       eventBridge.offCanvasEvent('game:cardPlay', handleCardPlay);
+      eventBridge.offCanvasEvent('game:cardMove', handleCardMove);
       eventBridge.offCanvasEvent('pixi:ready', handlePixiReady);
     };
-  }, [currentPlayer, drawCard, playCard, eventBridge]);
+  }, [currentPlayer, drawCard, playCard, moveCard, eventBridge]);
 
   // Handle keyboard shortcuts
   React.useEffect(() => {
