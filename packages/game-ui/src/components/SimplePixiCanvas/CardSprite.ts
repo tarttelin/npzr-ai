@@ -57,17 +57,16 @@ export class CardSprite extends PIXI.Container {
   }
 
   /**
-   * Get card dimensions based on size setting
+   * Get card dimensions - consistent sizing with proper aspect ratio
    */
   private getCardDimensions(): { cardWidth: number; cardHeight: number } {
-    if (this.options.size === 'small') {
-      return { cardWidth: 100, cardHeight: 40 }; // Stack cards
-    } else {
-      return { 
-        cardWidth: 80, 
-        cardHeight: 80 / (280/190) // Normal hand cards with proper aspect ratio
-      };
-    }
+    // Use consistent 80px width with proper sprite sheet aspect ratio (280x190 = 1.47)
+    const cardWidth = 80;
+    const cardHeight = cardWidth / (280/190); // Maintains sprite sheet aspect ratio
+    return { 
+      cardWidth, 
+      cardHeight // This gives us 80x54.4, which is close to our target
+    };
   }
 
   /**
@@ -119,7 +118,7 @@ export class CardSprite extends PIXI.Container {
     const border = new PIXI.Graphics();
     border
       .rect(0, 0, cardWidth, cardHeight)
-      .stroke({ width: this.options.size === 'small' ? 1 : 2, color: 0x333333 });
+      .stroke({ width: 2, color: 0x333333 });
     this.addChild(border);
   }
 
@@ -135,7 +134,7 @@ export class CardSprite extends PIXI.Container {
         .rect(0, 0, cardWidth, cardHeight)
         .fill(0xFFD700)
         .stroke({ 
-          width: this.options.size === 'small' ? 1 : 2, 
+          width: 2, 
           color: 0xFF8C00 
         });
     } else {
@@ -144,7 +143,7 @@ export class CardSprite extends PIXI.Container {
         .rect(0, 0, cardWidth, cardHeight)
         .fill(0xFFFFFF)
         .stroke({ 
-          width: this.options.size === 'small' ? 1 : 2, 
+          width: 2, 
           color: 0x333333 
         });
     }
@@ -152,14 +151,11 @@ export class CardSprite extends PIXI.Container {
     this.addChild(cardBg);
     
     // Add text
-    const fontSize = this.options.size === 'small' ? 12 : 12;
     const text = new PIXI.Text({
-      text: this.options.size === 'small' 
-        ? `${this.card.character || 'W'}\n${this.card.bodyPart || 'C'}`
-        : (this.card.character || 'Wild'),
+      text: this.card.character || 'Wild',
       style: {
         fontFamily: 'Arial',
-        fontSize: fontSize,
+        fontSize: 12,
         fill: 0x000000,
         align: 'center',
         fontWeight: 'bold'
@@ -169,19 +165,19 @@ export class CardSprite extends PIXI.Container {
     text.y = (cardHeight - text.height) / 2;
     this.addChild(text);
 
-    // Add body part text for normal cards
-    if (this.options.size === 'normal' && !isWildCard) {
+    // Add body part text for non-wild cards
+    if (!isWildCard) {
       const bodyPartText = new PIXI.Text({
         text: this.card.bodyPart || 'Card',
         style: {
           fontFamily: 'Arial',
-          fontSize: 10,
+          fontSize: 9,
           fill: 0x666666,
           align: 'center'
         }
       });
       bodyPartText.x = (cardWidth - bodyPartText.width) / 2;
-      bodyPartText.y = cardHeight - 20;
+      bodyPartText.y = cardHeight - 12;
       this.addChild(bodyPartText);
     }
   }

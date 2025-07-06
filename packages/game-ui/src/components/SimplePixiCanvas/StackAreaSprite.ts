@@ -32,7 +32,7 @@ export class StackAreaSprite extends PIXI.Container {
     super();
     this.options = options;
     this.partWidth = options.partWidth || 110;
-    this.partHeight = options.partHeight || 45;
+    this.partHeight = options.partHeight || 58; // Adjusted to accommodate 80x54.4 cards
     
     this.createStackArea();
     
@@ -65,31 +65,41 @@ export class StackAreaSprite extends PIXI.Container {
       const dropZone = new PIXI.Graphics();
       const yPos = partIndex * (this.partHeight + 2);
       
-      // Different styling for new stack vs existing stack
+      // Enhanced styling for new stack vs existing stack
       if (this.options.isNewStack) {
+        // New stack - dashed border with subtle background
         dropZone
-          .rect(0, yPos, this.partWidth, this.partHeight)
-          .fill(0x444444, 0.2)
-          .stroke({ width: 1, color: 0x888888 });
+          .roundRect(0, yPos, this.partWidth, this.partHeight, 4)
+          .fill(0x2C5530, 0.1) // Very subtle green tint
+          .stroke({ width: 2, color: 0x7CB342, alpha: 0.6 }); // Green dashed effect
       } else {
+        // Existing stack - solid background with character-themed colors
+        const bgColor = this.getBodyPartColor(bodyPart);
         dropZone
-          .rect(0, yPos, this.partWidth, this.partHeight)
-          .fill(0x333333, 0.3)
-          .stroke({ width: 2, color: 0x666666 });
+          .roundRect(0, yPos, this.partWidth, this.partHeight, 4)
+          .fill(bgColor, 0.2)
+          .stroke({ width: 2, color: bgColor, alpha: 0.8 });
       }
       
-      // Add body part label
+      // Add enhanced body part label with icon
+      const labelText = this.getBodyPartLabel(bodyPart);
       const partLabel = new PIXI.Text({
-        text: bodyPart.charAt(0).toUpperCase() + bodyPart.slice(1),
+        text: labelText,
         style: {
           fontFamily: 'Arial',
-          fontSize: 10,
-          fill: 0xCCCCCC,
-          align: 'center'
+          fontSize: 11,
+          fill: this.options.isNewStack ? 0xAAAAAA : 0xFFFFFF,
+          align: 'center',
+          fontWeight: 'bold',
+          dropShadow: true,
+          dropShadowColor: 0x000000,
+          dropShadowAlpha: 0.5,
+          dropShadowAngle: Math.PI / 4,
+          dropShadowDistance: 1
         }
       });
-      partLabel.x = 5;
-      partLabel.y = yPos + 2;
+      partLabel.x = (this.partWidth - partLabel.width) / 2;
+      partLabel.y = yPos + (this.partHeight - partLabel.height) / 2;
       
       // Store metadata for drop detection
       dropZone.name = `${bodyPart}-zone`;
@@ -101,19 +111,25 @@ export class StackAreaSprite extends PIXI.Container {
       this.addChild(partLabel);
     });
     
-    // Add stack label
+    // Add enhanced stack label
+    const stackText = this.options.isNewStack ? '+ New Stack' : `Stack ${this.options.index + 1}`;
     const stackLabel = new PIXI.Text({
-      text: this.options.isNewStack ? 'New Stack' : `Stack ${this.options.index + 1}`,
+      text: stackText,
       style: {
         fontFamily: 'Arial',
-        fontSize: 12,
-        fill: this.options.isNewStack ? 0x999999 : 0xFFFFFF,
+        fontSize: 13,
+        fill: this.options.isNewStack ? 0x7CB342 : 0xFFFFFF,
         align: 'center',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        dropShadow: true,
+        dropShadowColor: 0x000000,
+        dropShadowAlpha: 0.7,
+        dropShadowAngle: Math.PI / 4,
+        dropShadowDistance: 2
       }
     });
     stackLabel.x = (this.partWidth - stackLabel.width) / 2;
-    stackLabel.y = -18;
+    stackLabel.y = -22;
     
     this.addChild(stackLabel);
   }
@@ -126,9 +142,13 @@ export class StackAreaSprite extends PIXI.Container {
     const cardsToRemove = this.children.filter(child => child.name?.startsWith('stack-card'));
     cardsToRemove.forEach(card => this.removeChild(card));
 
-    // Clear any existing completion highlight
-    const highlightToRemove = this.children.filter(child => child.name?.startsWith('stack-complete-highlight'));
-    highlightToRemove.forEach(highlight => this.removeChild(highlight));
+    // Clear any existing completion elements
+    const elementsToRemove = this.children.filter(child => 
+      child.name?.startsWith('stack-complete-highlight') ||
+      child.name?.startsWith('stack-complete-glow') ||
+      child.name?.startsWith('stack-complete-badge')
+    );
+    elementsToRemove.forEach(element => this.removeChild(element));
 
     // Position cards in their respective body part zones
     
@@ -140,8 +160,8 @@ export class StackAreaSprite extends PIXI.Container {
         makeInteractive: false
       });
       headCard.name = 'stack-card-head';
-      headCard.x = 5; // Center: (110 - 100) / 2 = 5
-      headCard.y = 2.5; // Center: (45 - 40) / 2 = 2.5
+      headCard.x = 15; // Center: (110 - 80) / 2 = 15
+      headCard.y = 3; // Center: (60 - 54) / 2 = 3
       this.addChild(headCard);
     }
 
@@ -153,8 +173,8 @@ export class StackAreaSprite extends PIXI.Container {
         makeInteractive: false
       });
       torsoCard.name = 'stack-card-torso';
-      torsoCard.x = 5;
-      torsoCard.y = (this.partHeight + 2) + 2.5; // Zone start + centering offset
+      torsoCard.x = 15;
+      torsoCard.y = (this.partHeight + 2) + 3; // Zone start + centering offset
       this.addChild(torsoCard);
     }
 
@@ -166,19 +186,48 @@ export class StackAreaSprite extends PIXI.Container {
         makeInteractive: false
       });
       legsCard.name = 'stack-card-legs';
-      legsCard.x = 5;
-      legsCard.y = 2 * (this.partHeight + 2) + 2.5; // Zone start + centering offset
+      legsCard.x = 15;
+      legsCard.y = 2 * (this.partHeight + 2) + 3; // Zone start + centering offset
       this.addChild(legsCard);
     }
 
-    // Highlight complete stacks
+    // Enhanced complete stack highlighting
     if (stackData.isComplete) {
       const highlight = new PIXI.Graphics();
       highlight
-        .rect(-2, -2, this.partWidth + 4, 3 * (this.partHeight + 2) + 4)
-        .stroke({ width: 3, color: 0x00FF00, alpha: 0.8 });
+        .roundRect(-4, -4, this.partWidth + 8, 3 * (this.partHeight + 2) + 8, 8)
+        .stroke({ width: 4, color: 0xFFD700 }); // Gold highlight
+      
+      // Add inner glow effect
+      const innerGlow = new PIXI.Graphics();
+      innerGlow
+        .roundRect(-2, -2, this.partWidth + 4, 3 * (this.partHeight + 2) + 4, 6)
+        .stroke({ width: 2, color: 0xFFD700, alpha: 0.6 });
+      
       highlight.name = 'stack-complete-highlight';
+      innerGlow.name = 'stack-complete-glow';
       this.addChild(highlight);
+      this.addChild(innerGlow);
+      
+      // Add completion badge
+      const completeBadge = new PIXI.Text({
+        text: '✓ COMPLETE',
+        style: {
+          fontFamily: 'Arial',
+          fontSize: 10,
+          fill: 0xFFD700,
+          align: 'center',
+          fontWeight: 'bold',
+          dropShadow: true,
+          dropShadowColor: 0x000000,
+          dropShadowAlpha: 0.8,
+          dropShadowDistance: 1
+        }
+      });
+      completeBadge.x = (this.partWidth - completeBadge.width) / 2;
+      completeBadge.y = 3 * (this.partHeight + 2) + 6;
+      completeBadge.name = 'stack-complete-badge';
+      this.addChild(completeBadge);
     }
   }
 
@@ -203,5 +252,37 @@ export class StackAreaSprite extends PIXI.Container {
     }
     
     return null;
+  }
+
+  /**
+   * Get themed color for body part zones
+   */
+  private getBodyPartColor(bodyPart: string): number {
+    switch (bodyPart) {
+      case 'head':
+        return 0x8E24AA; // Purple for head/mind
+      case 'torso':
+        return 0xD32F2F; // Red for torso/heart
+      case 'legs':
+        return 0x1976D2; // Blue for legs/movement
+      default:
+        return 0x666666; // Default gray
+    }
+  }
+
+  /**
+   * Get enhanced label text with icons for body parts
+   */
+  private getBodyPartLabel(bodyPart: string): string {
+    switch (bodyPart) {
+      case 'head':
+        return '🧠 Head';
+      case 'torso':
+        return '💗 Torso';
+      case 'legs':
+        return '🦵 Legs';
+      default:
+        return bodyPart.charAt(0).toUpperCase() + bodyPart.slice(1);
+    }
   }
 }

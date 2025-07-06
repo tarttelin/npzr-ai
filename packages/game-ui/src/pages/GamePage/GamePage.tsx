@@ -48,7 +48,7 @@ export const GamePage: React.FC<GamePageProps> = () => {
     winner: winnerState,
     drawCard,
     playCard,
-    moveCard,
+    // moveCard, // Not currently used
     nominateWild,
     error: playerError
   } = usePlayerState(players, currentPlayer, isGameComplete, winner);
@@ -68,21 +68,21 @@ export const GamePage: React.FC<GamePageProps> = () => {
     cardName: ''
   });
 
-  // Handle wild card nomination trigger
-  const handleWildCardNominationTrigger = (card: Card, nomination: { character: Character; bodyPart: BodyPart }) => {
-    // If nomination is already provided, use it directly
-    if (nomination.character && nomination.bodyPart) {
-      nominateWild(card, nomination);
-    } else {
-      // Otherwise, show the nomination UI
-      const cardName = `${card.character || 'Wild'} ${card.bodyPart || 'Card'}`;
-      setWildCardNomination({
-        isOpen: true,
-        card,
-        cardName
-      });
-    }
-  };
+  // Handle wild card nomination trigger (commented out as not currently used)
+  // const handleWildCardNominationTrigger = (card: Card, nomination: { character: Character; bodyPart: BodyPart }) => {
+  //   // If nomination is already provided, use it directly
+  //   if (nomination.character && nomination.bodyPart) {
+  //     nominateWild(card, nomination);
+  //   } else {
+  //     // Otherwise, show the nomination UI
+  //     const cardName = `${card.character || 'Wild'} ${card.bodyPart || 'Card'}`;
+  //     setWildCardNomination({
+  //       isOpen: true,
+  //       card,
+  //       cardName
+  //     });
+  //   }
+  // };
 
   const handleNominateWild = (character: Character, bodyPart: BodyPart) => {
     if (wildCardNomination.card) {
